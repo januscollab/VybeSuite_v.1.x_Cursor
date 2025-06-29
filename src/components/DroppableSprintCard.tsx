@@ -124,10 +124,6 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
                 FUTURE ENHANCEMENTS
               </span>
             )}
-            {/* Width indicator for development/debugging */}
-            <span className="px-2 py-0.5 bg-bg-muted text-text-quaternary text-xs font-medium rounded-full">
-              {layoutRules.width}
-            </span>
           </div>
           
           <div className="flex gap-4 text-sm text-text-tertiary">
