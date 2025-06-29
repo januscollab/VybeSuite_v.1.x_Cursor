@@ -5,14 +5,17 @@ import { useAuth } from './AuthContext';
 import claudePrompt from '../../prompts/userstory_claude.txt?raw';
 import chatgptPrompt from '../../prompts/userstory_chatgpt.txt?raw';
 import claudeGithubPrompt from '../../prompts/userstory_claude_github.txt?raw';
+import openSprintPromptRaw from '../../prompts/open_sprint.txt?raw';
 
 interface PromptContextType {
   prompts: {
     claude: string;
     chatgpt: string;
     claudeGithub: string;
+    openSprint: string;
   };
   getStoryGenerationPrompt: (provider: 'openai' | 'anthropic', includeGithubCodeReview?: boolean) => string;
+  getOpenSprintPromptTemplate: () => string;
   isLoaded: boolean;
 }
 
@@ -32,7 +35,8 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [prompts, setPrompts] = useState({
     claude: '',
     chatgpt: '',
-    claudeGithub: ''
+    claudeGithub: '',
+    openSprint: ''
   });
 
   // Load prompts when user is authenticated
@@ -42,7 +46,8 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setPrompts({
         claude: claudePrompt,
         chatgpt: chatgptPrompt,
-        claudeGithub: claudeGithubPrompt
+        claudeGithub: claudeGithubPrompt,
+        openSprint: openSprintPromptRaw
       });
       setIsLoaded(true);
       console.log('AI prompts loaded successfully');
@@ -51,7 +56,8 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setPrompts({
         claude: '',
         chatgpt: '',
-        claudeGithub: ''
+        claudeGithub: '',
+        openSprint: ''
       });
     }
   }, [user]);
@@ -73,9 +79,18 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
+  const getOpenSprintPromptTemplate = (): string => {
+    if (!isLoaded) {
+      console.warn('Prompts not loaded yet, using fallback');
+      return 'Review and Provide a Build Plan for the following features for {sprintTitle} Sprint:\n\n{storyList}';
+    }
+    return prompts.openSprint;
+  };
+
   const value = {
     prompts,
     getStoryGenerationPrompt,
+    getOpenSprintPromptTemplate,
     isLoaded
   };
 

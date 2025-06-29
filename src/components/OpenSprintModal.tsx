@@ -27,7 +27,7 @@ export const OpenSprintModal: React.FC<OpenSprintModalProps> = ({
         stories: openStories.map(story => ({
           number: story.number,
           title: story.title,
-          description: story.description
+          description: story.description || 'No description provided'
         }))
       });
       setPrompt(generatedPrompt);
