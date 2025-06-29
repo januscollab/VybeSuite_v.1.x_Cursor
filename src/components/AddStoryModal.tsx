@@ -171,6 +171,7 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
   if (!isOpen) return null;
 
   return (
+    <>
     <div 
       className="fixed inset-0 bg-bg-overlay z-50 flex items-center justify-center p-5"
       onClick={(e) => {
@@ -526,5 +527,6 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
         font-weight: 500;
       }
     `}</style>
+    </>
   );
 };
