@@ -40,9 +40,9 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
     onMoveStory(draggableId, destination.droppableId, destination.index);
   };
 
-  const prioritySprint = sprints.find(s => s.id === 'priority');
-  const developmentSprint = sprints.find(s => s.id === 'development');
-  const backlogSprint = sprints.find(s => s.id === 'backlog');
+  const prioritySprint = sprints.find(s => s.title === 'Priority Sprint');
+  const developmentSprint = sprints.find(s => s.title === 'Development Sprint');
+  const backlogSprint = sprints.find(s => s.title === 'Backlog - Future Enhancements');
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>

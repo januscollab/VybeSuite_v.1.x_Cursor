@@ -40,28 +40,28 @@ export const useSupabaseStories = () => {
       if (!existingSprints || existingSprints.length === 0) {
         const defaultSprints = [
           {
-            id: 'priority',
             title: 'Priority Sprint',
             icon: '🔥',
             is_backlog: false,
             is_draggable: false,
-            position: 0
+            position: 0,
+            user_id: user.id
           },
           {
-            id: 'development',
             title: 'Development Sprint',
             icon: '⚡',
             is_backlog: false,
             is_draggable: true,
-            position: 1
+            position: 1,
+            user_id: user.id
           },
           {
-            id: 'backlog',
             title: 'Backlog - Future Enhancements',
             icon: '📋',
             is_backlog: true,
             is_draggable: false,
-            position: 2
+            position: 2,
+            user_id: user.id
           }
         ];
 
