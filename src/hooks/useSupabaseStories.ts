@@ -217,10 +217,11 @@ export const useSupabaseStories = () => {
               ? {
                   ...sprint,
                   stories: [...sprint.stories, newStory].sort((a, b) => {
-                    // Sort by position if available, otherwise by creation date
-                    const aPos = payload.new.position ?? 999;
-                    const bPos = sprint.stories.find(s => s.id === b.id) ? 
-                      sprint.stories.findIndex(s => s.id === b.id) : 999;
+                    // Sort by position, with new story at the correct position
+                    const aPos = a.id === newStory.id ? payload.new.position : 
+                      sprint.stories.findIndex(s => s.id === a.id);
+                    const bPos = b.id === newStory.id ? payload.new.position : 
+                      sprint.stories.findIndex(s => s.id === b.id);
                     return aPos - bPos;
                   })
                 }
@@ -266,9 +267,9 @@ export const useSupabaseStories = () => {
                       ...sprint, 
                       stories: [...sprint.stories, updatedStory].sort((a, b) => {
                         const aPos = a.id === updatedStory.id ? payload.new.position : 
-                          sprint.stories.findIndex(s => s.id === a.id);
+                          updated.find(s => s.id === newSprintId)?.stories.findIndex(s => s.id === a.id) ?? 999;
                         const bPos = b.id === updatedStory.id ? payload.new.position : 
-                          sprint.stories.findIndex(s => s.id === b.id);
+                          updated.find(s => s.id === newSprintId)?.stories.findIndex(s => s.id === b.id) ?? 999;
                         return aPos - bPos;
                       })
                     }
@@ -325,7 +326,8 @@ export const useSupabaseStories = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'sprints'
+          table: 'sprints',
+          filter: `user_id=eq.${user?.id}`
         },
         handleSprintChange
       )
@@ -355,7 +357,7 @@ export const useSupabaseStories = () => {
       supabase.removeChannel(sprintChannel);
       supabase.removeChannel(storyChannel);
     };
-  }, [isInitialized, handleSprintChange, handleStoryChange]);
+  }, [isInitialized, user?.id, handleSprintChange, handleStoryChange]);
 
   // Generate next story number
   const generateStoryNumber = useCallback(async () => {
@@ -426,8 +428,12 @@ export const useSupabaseStories = () => {
 
       if (error) throw error;
 
-      // Real-time subscription will handle the update
-      console.log('Story added successfully, real-time sync will update UI');
+      console.log('Story added successfully:', data);
+      
+      // Force a refresh if real-time doesn't work immediately
+      setTimeout(() => {
+        loadData();
+      }, 100);
 
       return data;
     } catch (err) {
