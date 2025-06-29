@@ -45,8 +45,7 @@ export const useSupabaseStories = () => {
             icon: '🔥',
             is_backlog: false,
             is_draggable: false,
-            position: 0,
-            user_id: user.id
+            position: 0
           },
           {
             id: 'development',
@@ -54,8 +53,7 @@ export const useSupabaseStories = () => {
             icon: '⚡',
             is_backlog: false,
             is_draggable: true,
-            position: 1,
-            user_id: user.id
+            position: 1
           },
           {
             id: 'backlog',
@@ -63,14 +61,13 @@ export const useSupabaseStories = () => {
             icon: '📋',
             is_backlog: true,
             is_draggable: false,
-            position: 2,
-            user_id: user.id
+            position: 2
           }
         ];
 
         const { error: upsertError } = await supabase
           .from('sprints')
-          .upsert(defaultSprints, { onConflict: 'id' });
+          .insert(defaultSprints);
 
         if (upsertError) throw upsertError;
       }
@@ -113,10 +110,12 @@ export const useSupabaseStories = () => {
       // Transform and combine data
       const transformedSprints: Sprint[] = (sprintsData || []).map(sprint => ({
         id: sprint.id,
+        user_id: sprint.user_id,
         title: sprint.title,
         icon: sprint.icon,
         isBacklog: sprint.is_backlog,
         isDraggable: sprint.is_draggable,
+        archivedAt: sprint.archived_at,
         stories: (storiesData || [])
           .filter(story => story.sprint_id === sprint.id)
           .map(story => ({
@@ -129,7 +128,8 @@ export const useSupabaseStories = () => {
             tags: story.tags || [],
             sprintId: story.sprint_id,
             createdAt: story.created_at,
-            updatedAt: story.updated_at
+            updatedAt: story.updated_at,
+            archivedAt: story.archived_at
           }))
       }));
 
