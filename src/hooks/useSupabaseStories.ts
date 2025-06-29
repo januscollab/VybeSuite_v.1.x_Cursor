@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { Story, Sprint, SprintStats } from '../types';
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export const useSupabaseStories = () => {
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize data - create default sprints if they don't exist
   const initializeData = useCallback(async () => {
@@ -59,6 +61,7 @@ export const useSupabaseStories = () => {
 
       // Load all data
       await loadData();
+      setIsInitialized(true);
     } catch (err) {
       console.error('Error initializing data:', err);
       setError(err instanceof Error ? err.message : 'Failed to initialize data');
@@ -115,6 +118,223 @@ export const useSupabaseStories = () => {
       setError(err instanceof Error ? err.message : 'Failed to load data');
     }
   }, []);
+
+  // Handle real-time sprint changes
+  const handleSprintChange = useCallback((payload: RealtimePostgresChangesPayload<any>) => {
+    console.log('Sprint change detected:', payload.eventType, payload);
+    
+    switch (payload.eventType) {
+      case 'INSERT':
+        if (payload.new) {
+          const newSprint: Sprint = {
+            id: payload.new.id,
+            title: payload.new.title,
+            icon: payload.new.icon,
+            isBacklog: payload.new.is_backlog,
+            isDraggable: payload.new.is_draggable,
+            stories: []
+          };
+          
+          setSprints(prev => {
+            const exists = prev.find(s => s.id === newSprint.id);
+            if (exists) return prev;
+            return [...prev, newSprint].sort((a, b) => {
+              const aPos = a.id === 'priority' ? 0 : a.id === 'development' ? 1 : 2;
+              const bPos = b.id === 'priority' ? 0 : b.id === 'development' ? 1 : 2;
+              return aPos - bPos;
+            });
+          });
+        }
+        break;
+        
+      case 'UPDATE':
+        if (payload.new) {
+          setSprints(prev => prev.map(sprint => 
+            sprint.id === payload.new.id 
+              ? {
+                  ...sprint,
+                  title: payload.new.title,
+                  icon: payload.new.icon,
+                  isBacklog: payload.new.is_backlog,
+                  isDraggable: payload.new.is_draggable
+                }
+              : sprint
+          ));
+        }
+        break;
+        
+      case 'DELETE':
+        if (payload.old) {
+          setSprints(prev => prev.filter(sprint => sprint.id !== payload.old.id));
+        }
+        break;
+    }
+  }, []);
+
+  // Handle real-time story changes
+  const handleStoryChange = useCallback((payload: RealtimePostgresChangesPayload<any>) => {
+    console.log('Story change detected:', payload.eventType, payload);
+    
+    switch (payload.eventType) {
+      case 'INSERT':
+        if (payload.new) {
+          const newStory: Story = {
+            id: payload.new.id,
+            number: payload.new.number,
+            title: payload.new.title,
+            description: payload.new.description || '',
+            completed: payload.new.completed,
+            date: payload.new.date,
+            tags: payload.new.tags || [],
+            sprintId: payload.new.sprint_id,
+            createdAt: payload.new.created_at,
+            updatedAt: payload.new.updated_at
+          };
+          
+          setSprints(prev => prev.map(sprint => 
+            sprint.id === newStory.sprintId
+              ? {
+                  ...sprint,
+                  stories: [...sprint.stories, newStory].sort((a, b) => {
+                    // Sort by position if available, otherwise by creation date
+                    const aPos = payload.new.position ?? 999;
+                    const bPos = sprint.stories.find(s => s.id === b.id) ? 
+                      sprint.stories.findIndex(s => s.id === b.id) : 999;
+                    return aPos - bPos;
+                  })
+                }
+              : sprint
+          ));
+        }
+        break;
+        
+      case 'UPDATE':
+        if (payload.new && payload.old) {
+          const updatedStory: Story = {
+            id: payload.new.id,
+            number: payload.new.number,
+            title: payload.new.title,
+            description: payload.new.description || '',
+            completed: payload.new.completed,
+            date: payload.new.date,
+            tags: payload.new.tags || [],
+            sprintId: payload.new.sprint_id,
+            createdAt: payload.new.created_at,
+            updatedAt: payload.new.updated_at
+          };
+          
+          const oldSprintId = payload.old.sprint_id;
+          const newSprintId = payload.new.sprint_id;
+          
+          setSprints(prev => {
+            let updated = [...prev];
+            
+            // If story moved between sprints
+            if (oldSprintId !== newSprintId) {
+              // Remove from old sprint
+              updated = updated.map(sprint => 
+                sprint.id === oldSprintId
+                  ? { ...sprint, stories: sprint.stories.filter(s => s.id !== updatedStory.id) }
+                  : sprint
+              );
+              
+              // Add to new sprint
+              updated = updated.map(sprint => 
+                sprint.id === newSprintId
+                  ? { 
+                      ...sprint, 
+                      stories: [...sprint.stories, updatedStory].sort((a, b) => {
+                        const aPos = a.id === updatedStory.id ? payload.new.position : 
+                          sprint.stories.findIndex(s => s.id === a.id);
+                        const bPos = b.id === updatedStory.id ? payload.new.position : 
+                          sprint.stories.findIndex(s => s.id === b.id);
+                        return aPos - bPos;
+                      })
+                    }
+                  : sprint
+              );
+            } else {
+              // Update story in same sprint
+              updated = updated.map(sprint => 
+                sprint.id === newSprintId
+                  ? {
+                      ...sprint,
+                      stories: sprint.stories.map(story => 
+                        story.id === updatedStory.id ? updatedStory : story
+                      ).sort((a, b) => {
+                        // Re-sort based on position
+                        const aPos = a.id === updatedStory.id ? payload.new.position : 
+                          sprint.stories.findIndex(s => s.id === a.id);
+                        const bPos = b.id === updatedStory.id ? payload.new.position : 
+                          sprint.stories.findIndex(s => s.id === b.id);
+                        return aPos - bPos;
+                      })
+                    }
+                  : sprint
+              );
+            }
+            
+            return updated;
+          });
+        }
+        break;
+        
+      case 'DELETE':
+        if (payload.old) {
+          setSprints(prev => prev.map(sprint => ({
+            ...sprint,
+            stories: sprint.stories.filter(story => story.id !== payload.old.id)
+          })));
+        }
+        break;
+    }
+  }, []);
+
+  // Set up real-time subscriptions
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    console.log('Setting up real-time subscriptions...');
+
+    // Subscribe to sprint changes
+    const sprintChannel = supabase
+      .channel('sprints-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sprints'
+        },
+        handleSprintChange
+      )
+      .subscribe((status) => {
+        console.log('Sprint subscription status:', status);
+      });
+
+    // Subscribe to story changes
+    const storyChannel = supabase
+      .channel('stories-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'stories'
+        },
+        handleStoryChange
+      )
+      .subscribe((status) => {
+        console.log('Story subscription status:', status);
+      });
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      console.log('Cleaning up real-time subscriptions...');
+      supabase.removeChannel(sprintChannel);
+      supabase.removeChannel(storyChannel);
+    };
+  }, [isInitialized, handleSprintChange, handleStoryChange]);
 
   // Generate next story number
   const generateStoryNumber = useCallback(async () => {
@@ -177,8 +397,8 @@ export const useSupabaseStories = () => {
 
       if (error) throw error;
 
-      // Reload data to reflect changes
-      await loadData();
+      // Real-time subscription will handle the update
+      console.log('Story added successfully, real-time sync will update UI');
 
       return data;
     } catch (err) {
@@ -186,7 +406,7 @@ export const useSupabaseStories = () => {
       setError(err instanceof Error ? err.message : 'Failed to add story');
       throw err;
     }
-  }, [generateStoryNumber, loadData]);
+  }, [generateStoryNumber]);
 
   // Toggle story completion
   const toggleStory = useCallback(async (storyId: string) => {
@@ -211,13 +431,13 @@ export const useSupabaseStories = () => {
 
       if (updateError) throw updateError;
 
-      // Reload data to reflect changes
-      await loadData();
+      // Real-time subscription will handle the update
+      console.log('Story toggled successfully, real-time sync will update UI');
     } catch (err) {
       console.error('Error toggling story:', err);
       setError(err instanceof Error ? err.message : 'Failed to update story');
     }
-  }, [loadData]);
+  }, []);
 
   // Move story between sprints or reorder within sprint
   const moveStory = useCallback(async (storyId: string, destinationSprintId: string, newPosition: number) => {
@@ -307,13 +527,13 @@ export const useSupabaseStories = () => {
         throw new Error(`Failed to update ${errors.length} stories: ${errors[0].error?.message}`);
       }
 
-      // Reload data to reflect changes
-      await loadData();
+      // Real-time subscription will handle the update
+      console.log('Story moved successfully, real-time sync will update UI');
     } catch (err) {
       console.error('Error moving story:', err);
       setError(err instanceof Error ? err.message : 'Failed to move story');
     }
-  }, [loadData]);
+  }, []);
 
   // Calculate sprint statistics
   const getSprintStats = useCallback((sprintId: string): SprintStats => {
