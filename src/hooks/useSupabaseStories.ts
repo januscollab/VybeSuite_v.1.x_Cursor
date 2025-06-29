@@ -259,8 +259,8 @@ export const useSupabaseStories = () => {
           title,
           description: description || '',
           icon: icon || '📋',
-          is_backlog: isBacklog,
-          is_draggable: isDraggable,
+          is_backlog: isBacklog,        // Ensure backlog flag is set correctly
+          is_draggable: isBacklog ? false : isDraggable,  // Backlog sprints are never draggable
           user_id: user.id,
           position: nextPosition
         })

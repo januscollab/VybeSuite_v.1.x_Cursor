@@ -190,7 +190,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
               icon={backlogSprint.icon}
               stories={backlogSprint.stories}
               stats={getSprintStats(backlogSprint.id)}
-              isBacklog={backlogSprint.isBacklog}
+              isBacklog={true}  // Explicitly set to true for backlog sprint
               operationLoading={operationLoading}
               onAddStory={() => onAddStory(backlogSprint.id)}
               onOpenSprint={() => onOpenSprint(backlogSprint.id)}

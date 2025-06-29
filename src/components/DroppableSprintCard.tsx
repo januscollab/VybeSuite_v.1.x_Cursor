@@ -161,50 +161,53 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
             Open
           </button>
 
-          <div className="relative">
-            <button
-              onMouseEnter={handleMouseEnterClose}
-              onMouseLeave={handleMouseLeaveClose}
-              disabled={isSprintLoading}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary disabled:hover:bg-transparent disabled:hover:text-text-secondary"
-            >
-              <FileText className="w-4 h-4" />
-              Close
-              <span className="text-xs">▼</span>
-            </button>
-
-            {showCloseDropdown && (
-              <div 
-                className="absolute top-full right-0 mt-1 bg-bg-primary border border-border-default rounded-lg shadow-devsuite-hover z-50 min-w-44 overflow-hidden"
+          {/* Only show Close button if NOT a backlog sprint and NOT priority sprint */}
+          {!isBacklog && !isPrioritySprint && (
+            <div className="relative">
+              <button
                 onMouseEnter={handleMouseEnterClose}
                 onMouseLeave={handleMouseLeaveClose}
+                disabled={isSprintLoading}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary disabled:hover:bg-transparent disabled:hover:text-text-secondary"
               >
-                <button
-                  onClick={() => {
-                    handleCloseSprint(id, 'completed');
-                  }}
-                  disabled={stats.done === 0 || isSprintLoading}
-                  className="flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors border-b border-border-subtle disabled:opacity-50 disabled:cursor-not-allowed disabled:text-text-disabled disabled:hover:bg-transparent disabled:hover:text-text-disabled text-text-secondary hover:bg-bg-muted hover:text-text-primary"
+                <FileText className="w-4 h-4" />
+                Close
+                <span className="text-xs">▼</span>
+              </button>
+
+              {showCloseDropdown && (
+                <div 
+                  className="absolute top-full right-0 mt-1 bg-bg-primary border border-border-default rounded-lg shadow-devsuite-hover z-50 min-w-44 overflow-hidden"
+                  onMouseEnter={handleMouseEnterClose}
+                  onMouseLeave={handleMouseLeaveClose}
                 >
-                  Close Completed
-                </button>
-                <button
-                  onClick={() => {
-                    handleCloseSprint(id, 'all');
-                  }}
-                  disabled={isSprintLoading}
-                  className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors disabled:opacity-50"
-                >
-                  Close All
-                </button>
-              </div>
-            )}
-          </div>
+                  <button
+                    onClick={() => {
+                      handleCloseSprint(id, 'completed');
+                    }}
+                    disabled={stats.done === 0 || isSprintLoading}
+                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors border-b border-border-subtle disabled:opacity-50 disabled:cursor-not-allowed disabled:text-text-disabled disabled:hover:bg-transparent disabled:hover:text-text-disabled text-text-secondary hover:bg-bg-muted hover:text-text-primary"
+                  >
+                    Close Completed
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleCloseSprint(id, 'all');
+                    }}
+                    disabled={isSprintLoading}
+                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors disabled:opacity-50"
+                  >
+                    Close All
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Delete Button - Bottom Left for User-Generated Sprints */}
-      {isUserGeneratedSprint && (
+      {/* Delete Button - Bottom Left for User-Generated Sprints Only (not backlog or priority) */}
+      {isUserGeneratedSprint && !isBacklog && !isPrioritySprint && (
         <button
           onClick={handleDeleteSprint}
           disabled={isDeleteLoading || stories.length > 0}
