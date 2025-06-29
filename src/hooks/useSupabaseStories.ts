@@ -432,7 +432,6 @@ export const useSupabaseStories = () => {
       const { data, error } = await supabase
         .from('sprints')
         .insert({
-          id: `sprint-${Date.now()}`,
           title,
           description: description || '',
           icon: icon || '📋',
