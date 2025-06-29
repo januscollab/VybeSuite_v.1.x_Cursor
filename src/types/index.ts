@@ -21,6 +21,7 @@ export interface Sprint {
   icon: string;
   isBacklog?: boolean;
   isDraggable?: boolean;
+  position?: number;
   stories: Story[];
   archivedAt?: string | null;
 }

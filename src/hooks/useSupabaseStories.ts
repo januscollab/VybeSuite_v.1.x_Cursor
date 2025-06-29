@@ -20,20 +20,431 @@ export const useSupabaseStories = () => {
 
   const { archiveAllStoriesInSprint, archiveCompletedStories } = useArchive();
 
+  // Load data from Supabase
+  const loadData = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch sprints
+      const { data: sprintsData, error: sprintsError } = await supabase
+        .from('sprints')
+        .select('*')
+        .eq('user_id', user.id)
+        .is('archived_at', null)
+        .order('position');
+
+      if (sprintsError) throw sprintsError;
+
+      // Fetch stories for all sprints
+      const { data: storiesData, error: storiesError } = await supabase
+        .from('stories')
+        .select('*')
+        .is('archived_at', null)
+        .order('position');
+
+      if (storiesError) throw storiesError;
+
+      // Group stories by sprint
+      const sprintsWithStories = (sprintsData || []).map(sprint => ({
+        ...sprint,
+        stories: (storiesData || [])
+          .filter(story => story.sprint_id === sprint.id)
+          .map(story => ({
+            id: story.id,
+            number: story.number,
+            title: story.title,
+            description: story.description,
+            completed: story.completed,
+            completedAt: story.completed_at,
+            date: story.date,
+            tags: story.tags || [],
+            sprintId: story.sprint_id,
+            createdAt: story.created_at,
+            updatedAt: story.updated_at,
+            archivedAt: story.archived_at
+          }))
+      }));
+
+      setSprints(sprintsWithStories);
+      setIsInitialized(true);
+    } catch (err) {
+      console.error('Error loading data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Add a new story
+  const addStory = useCallback(async (sprintId: string, storyData: { title: string; description?: string; tags?: string[] }) => {
+    if (!user) return;
+
+    const operationId = `add-story-${Date.now()}`;
+    setOperationLoading(prev => ({ ...prev, [operationId]: true }));
+
+    try {
+      // Generate story number
+      const { data: lastStory } = await supabase
+        .from('stories')
+        .select('number')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const lastNumber = lastStory?.[0]?.number ? parseInt(lastStory[0].number) : 0;
+      const newNumber = (lastNumber + 1).toString();
+
+      // Get next position in sprint
+      const { data: lastStoryInSprint } = await supabase
+        .from('stories')
+        .select('position')
+        .eq('sprint_id', sprintId)
+        .is('archived_at', null)
+        .order('position', { ascending: false })
+        .limit(1);
+
+      const nextPosition = (lastStoryInSprint?.[0]?.position || 0) + 1;
+
+      const { data, error } = await supabase
+        .from('stories')
+        .insert({
+          number: newNumber,
+          title: storyData.title,
+          description: storyData.description || '',
+          tags: storyData.tags || [],
+          sprint_id: sprintId,
+          date: new Date().toISOString().split('T')[0],
+          position: nextPosition
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update local state
+      setSprints(prev => prev.map(sprint => 
+        sprint.id === sprintId 
+          ? {
+              ...sprint,
+              stories: [...sprint.stories, {
+                id: data.id,
+                number: data.number,
+                title: data.title,
+                description: data.description,
+                completed: data.completed,
+                completedAt: data.completed_at,
+                date: data.date,
+                tags: data.tags || [],
+                sprintId: data.sprint_id,
+                createdAt: data.created_at,
+                updatedAt: data.updated_at,
+                archivedAt: data.archived_at
+              }]
+            }
+          : sprint
+      ));
+    } catch (err) {
+      console.error('Error adding story:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add story');
+    } finally {
+      setOperationLoading(prev => {
+        const { [operationId]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [user]);
+
+  // Add a new sprint
+  const addSprint = useCallback(async (sprintData: { title: string; description?: string; icon?: string }) => {
+    if (!user) return;
+
+    const operationId = `add-sprint-${Date.now()}`;
+    setOperationLoading(prev => ({ ...prev, [operationId]: true }));
+
+    try {
+      // Get next position
+      const { data: lastSprint } = await supabase
+        .from('sprints')
+        .select('position')
+        .eq('user_id', user.id)
+        .is('archived_at', null)
+        .order('position', { ascending: false })
+        .limit(1);
+
+      const nextPosition = (lastSprint?.[0]?.position || 0) + 1;
+
+      const { data, error } = await supabase
+        .from('sprints')
+        .insert({
+          id: `sprint-${Date.now()}`,
+          title: sprintData.title,
+          description: sprintData.description || '',
+          icon: sprintData.icon || '📋',
+          user_id: user.id,
+          position: nextPosition
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update local state
+      setSprints(prev => [...prev, { ...data, stories: [] }]);
+    } catch (err) {
+      console.error('Error adding sprint:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add sprint');
+    } finally {
+      setOperationLoading(prev => {
+        const { [operationId]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [user]);
+
+  // Move sprint position
+  const moveSprint = useCallback(async (sprintId: string, newPosition: number) => {
+    const operationId = `move-sprint-${sprintId}`;
+    setOperationLoading(prev => ({ ...prev, [operationId]: true }));
+
+    try {
+      const { error } = await supabase
+        .from('sprints')
+        .update({ position: newPosition })
+        .eq('id', sprintId);
+
+      if (error) throw error;
+
+      // Update local state
+      setSprints(prev => prev.map(sprint => 
+        sprint.id === sprintId 
+          ? { ...sprint, position: newPosition }
+          : sprint
+      ).sort((a, b) => (a.position || 0) - (b.position || 0)));
+    } catch (err) {
+      console.error('Error moving sprint:', err);
+      setError(err instanceof Error ? err.message : 'Failed to move sprint');
+    } finally {
+      setOperationLoading(prev => {
+        const { [operationId]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, []);
+
+  // Delete sprint
+  const deleteSprint = useCallback(async (sprintId: string) => {
+    const operationId = `delete-sprint-${sprintId}`;
+    setOperationLoading(prev => ({ ...prev, [operationId]: true }));
+
+    try {
+      const { error } = await supabase
+        .from('sprints')
+        .delete()
+        .eq('id', sprintId);
+
+      if (error) throw error;
+
+      // Update local state
+      setSprints(prev => prev.filter(sprint => sprint.id !== sprintId));
+    } catch (err) {
+      console.error('Error deleting sprint:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete sprint');
+    } finally {
+      setOperationLoading(prev => {
+        const { [operationId]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, []);
+
+  // Toggle story completion
+  const toggleStory = useCallback(async (storyId: string) => {
+    const operationId = `toggle-story-${storyId}`;
+    setOperationLoading(prev => ({ ...prev, [operationId]: true }));
+
+    try {
+      // Find current story state
+      const currentStory = sprints
+        .flatMap(sprint => sprint.stories)
+        .find(story => story.id === storyId);
+
+      if (!currentStory) throw new Error('Story not found');
+
+      const newCompleted = !currentStory.completed;
+      const completedAt = newCompleted ? new Date().toISOString() : null;
+
+      const { error } = await supabase
+        .from('stories')
+        .update({ 
+          completed: newCompleted,
+          completed_at: completedAt
+        })
+        .eq('id', storyId);
+
+      if (error) throw error;
+
+      // Update local state
+      setSprints(prev => prev.map(sprint => ({
+        ...sprint,
+        stories: sprint.stories.map(story => 
+          story.id === storyId 
+            ? { ...story, completed: newCompleted, completedAt }
+            : story
+        )
+      })));
+    } catch (err) {
+      console.error('Error toggling story:', err);
+      setError(err instanceof Error ? err.message : 'Failed to toggle story');
+    } finally {
+      setOperationLoading(prev => {
+        const { [operationId]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [sprints]);
+
+  // Move story between sprints
+  const moveStory = useCallback(async (storyId: string, targetSprintId: string, newPosition?: number) => {
+    const operationId = `move-story-${storyId}`;
+    setOperationLoading(prev => ({ ...prev, [operationId]: true }));
+
+    try {
+      // Get next position if not provided
+      let position = newPosition;
+      if (position === undefined) {
+        const { data: lastStoryInSprint } = await supabase
+          .from('stories')
+          .select('position')
+          .eq('sprint_id', targetSprintId)
+          .is('archived_at', null)
+          .order('position', { ascending: false })
+          .limit(1);
+
+        position = (lastStoryInSprint?.[0]?.position || 0) + 1;
+      }
+
+      const { error } = await supabase
+        .from('stories')
+        .update({ 
+          sprint_id: targetSprintId,
+          position
+        })
+        .eq('id', storyId);
+
+      if (error) throw error;
+
+      // Update local state
+      setSprints(prev => {
+        const story = prev
+          .flatMap(sprint => sprint.stories)
+          .find(s => s.id === storyId);
+
+        if (!story) return prev;
+
+        return prev.map(sprint => ({
+          ...sprint,
+          stories: sprint.id === targetSprintId
+            ? [...sprint.stories.filter(s => s.id !== storyId), { ...story, sprintId: targetSprintId }]
+            : sprint.stories.filter(s => s.id !== storyId)
+        }));
+      });
+    } catch (err) {
+      console.error('Error moving story:', err);
+      setError(err instanceof Error ? err.message : 'Failed to move story');
+    } finally {
+      setOperationLoading(prev => {
+        const { [operationId]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, []);
+
+  // Close sprint (archive all stories)
+  const closeSprint = useCallback(async (sprintId: string) => {
+    const operationId = `close-sprint-${sprintId}`;
+    setOperationLoading(prev => ({ ...prev, [operationId]: true }));
+
+    try {
+      await archiveAllStoriesInSprint(sprintId);
+      await loadData(); // Refresh data
+    } catch (err) {
+      console.error('Error closing sprint:', err);
+      setError(err instanceof Error ? err.message : 'Failed to close sprint');
+    } finally {
+      setOperationLoading(prev => {
+        const { [operationId]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [archiveAllStoriesInSprint, loadData]);
+
   // Get sprint statistics
-  const getSprintStats = useCallback((sprint: Sprint): SprintStats => {
+  const getSprintStats = useCallback((sprintId: string): SprintStats => {
+    const sprint = sprints.find(s => s.id === sprintId);
+    if (!sprint) {
+      return { todo: 0, inProgress: 0, done: 0 };
+    }
+
     const total = sprint.stories.length;
     const completed = sprint.stories.filter(story => story.completed).length;
 
     return {
       todo: total - completed,
       inProgress: 0, // Will be dynamic in later sprints
-      completed,
-      total
+      done: completed
     };
-  }, []);
+  }, [sprints]);
 
-  // Rest of the code...
+  // Load data on mount and user change
+  useEffect(() => {
+    if (user && !isInitialized) {
+      loadData();
+    }
+  }, [user, isInitialized, loadData]);
+
+  // Set up real-time subscriptions
+  useEffect(() => {
+    if (!user || !isInitialized) return;
+
+    const storiesSubscription = supabase
+      .channel('stories-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'stories'
+        },
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          console.log('Stories change received:', payload);
+          loadData();
+        }
+      )
+      .subscribe();
+
+    const sprintsSubscription = supabase
+      .channel('sprints-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sprints'
+        },
+        (payload: RealtimePostgresChangesPayload<any>) => {
+          console.log('Sprints change received:', payload);
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      storiesSubscription.unsubscribe();
+      sprintsSubscription.unsubscribe();
+    };
+  }, [user, isInitialized, loadData]);
 
   return {
     sprints,
