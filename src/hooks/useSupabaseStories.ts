@@ -136,21 +136,6 @@ export const useSupabaseStories = () => {
       if (!storyData.title || storyData.title.trim() === '') {
         throw new Error('Story title is required');
       }
-        .from('stories')
-        .select('number')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      let lastNumber = 0;
-      if (lastStory?.[0]?.number) {
-        // Extract numeric part from format like "STORY-001" or just "001"
-        const numberPart = lastStory[0].number.includes('-') 
-          ? lastStory[0].number.split('-')[1] 
-          : lastStory[0].number;
-        lastNumber = parseInt(numberPart) || 0;
-      }
-      
-      const newNumber = `STORY-${String(lastNumber + 1).padStart(3, '0')}`;
 
       // Get next position in sprint
       const { data: lastStoryInSprint } = await supabase
@@ -178,7 +163,6 @@ export const useSupabaseStories = () => {
         .single();
 
       if (error) throw error;
-        console.error('Supabase insert error:', error);
 
       // Update local state
       setSprints(prev => prev.map(sprint => 
