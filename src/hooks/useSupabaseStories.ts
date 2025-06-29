@@ -123,9 +123,9 @@ export const useSupabaseStories = () => {
           .from('stories')
           .select('id')
           .eq('number', newNumber)
-          .single();
+          .limit(1);
         
-        if (!existingStory) {
+        if (!existingStory || existingStory.length === 0) {
           break; // Number is unique, we can use it
         }
         

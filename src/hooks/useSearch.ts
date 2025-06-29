@@ -58,7 +58,7 @@ export const useSearch = () => {
 
       // Apply text search
       if (searchFilters.query.trim()) {
-        storyQuery = storyQuery.textSearch('search_vector', searchFilters.query.trim());
+        storyQuery = storyQuery.textSearch('search_vector', searchFilters.query.trim(), { type: 'plain' });
       }
 
       // Apply status filter
