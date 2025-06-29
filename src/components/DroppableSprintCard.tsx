@@ -33,6 +33,11 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
 }) => {
   const [showCloseDropdown, setShowCloseDropdown] = useState(false);
 
+  const handleCloseSprint = (sprintId: string, type: 'completed' | 'all') => {
+    console.log('Close Sprint clicked for sprint:', sprintId, 'type:', type);
+    onCloseSprint(type);
+  };
+
   return (
     <div className={`bg-bg-primary border border-border-default rounded-xl p-6 shadow-devsuite transition-all hover:shadow-devsuite-hover hover:border-border-strong ${
       isBacklog ? 'col-span-full' : ''
@@ -96,7 +101,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
               <div className="absolute top-full right-0 mt-1 bg-bg-primary border border-border-default rounded-lg shadow-devsuite-hover z-50 min-w-44 overflow-hidden">
                 <button
                   onClick={() => {
-                    onCloseSprint('completed');
+                    handleCloseSprint(id, 'completed');
                     setShowCloseDropdown(false);
                   }}
                   className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors border-b border-border-subtle"
@@ -105,7 +110,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    onCloseSprint('all');
+                    handleCloseSprint(id, 'all');
                     setShowCloseDropdown(false);
                   }}
                   className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors"

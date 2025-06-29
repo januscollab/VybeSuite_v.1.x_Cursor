@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { Story, Sprint, SprintStats } from '../types';
+import { useArchive } from './useArchive';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export const useSupabaseStories = () => {
@@ -8,6 +9,8 @@ export const useSupabaseStories = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  const { archiveSprint, archiveCompletedStories } = useArchive();
 
   // Initialize data - create default sprints if they don't exist
   const initializeData = useCallback(async () => {
@@ -550,6 +553,25 @@ export const useSupabaseStories = () => {
     };
   }, [sprints]);
 
+  // Handle sprint closing (archive functionality)
+  const closeSprint = useCallback(async (sprintId: string, type: 'completed' | 'all') => {
+    try {
+      if (type === 'completed') {
+        // Archive only completed stories
+        await archiveCompletedStories(sprintId);
+      } else {
+        // Archive the entire sprint and all its stories
+        await archiveSprint(sprintId, true);
+      }
+      
+      // Reload data to reflect changes
+      await loadData();
+    } catch (err) {
+      console.error('Error closing sprint:', err);
+      setError(err instanceof Error ? err.message : 'Failed to close sprint');
+    }
+  }, [archiveSprint, archiveCompletedStories, loadData]);
+
   // Initialize on mount
   useEffect(() => {
     initializeData();
@@ -562,6 +584,7 @@ export const useSupabaseStories = () => {
     addStory,
     toggleStory,
     moveStory,
+    closeSprint,
     getSprintStats,
     refreshData: loadData
   };

@@ -9,6 +9,7 @@ export interface Story {
   sprintId: string;
   createdAt: string;
   updatedAt: string;
+  archivedAt?: string | null;
 }
 
 export interface Sprint {
@@ -18,6 +19,7 @@ export interface Sprint {
   isBacklog?: boolean;
   isDraggable?: boolean;
   stories: Story[];
+  archivedAt?: string | null;
 }
 
 export interface SprintStats {
@@ -57,4 +59,37 @@ export interface AIGenerationResponse {
   title: string;
   description: string;
   tags: string[];
+}
+
+export interface SearchFilters {
+  query: string;
+  tags: string[];
+  status: 'all' | 'completed' | 'todo';
+  sprints: string[];
+  dateRange: {
+    start: string | null;
+    end: string | null;
+  };
+}
+
+export interface ArchiveStats {
+  totalStories: number;
+  completedStories: number;
+  totalSprints: number;
+  archivedStories: number;
+  archivedSprints: number;
+}
+
+export interface BulkAction {
+  type: 'archive' | 'restore' | 'delete' | 'move' | 'tag';
+  storyIds: string[];
+  targetSprintId?: string;
+  tags?: string[];
+}
+
+export interface ExportData {
+  sprints: Sprint[];
+  stories: Story[];
+  exportedAt: string;
+  filters?: SearchFilters;
 }

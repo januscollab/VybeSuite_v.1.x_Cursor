@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Header } from './components/Header';
 import { DragDropSprintBoard } from './components/DragDropSprintBoard';
+import { ArchiveView } from './components/ArchiveView';
 import { AddStoryModal } from './components/AddStoryModal';
 import { SettingsModal } from './components/SettingsModal';
 import { LoadingSpinner } from './components/LoadingSpinner';
@@ -32,6 +33,7 @@ function App() {
     addStory, 
     toggleStory, 
     moveStory, 
+    closeSprint,
     getSprintStats,
     refreshData 
   } = useSupabaseStories();
@@ -79,8 +81,7 @@ function App() {
   };
 
   const handleCloseSprint = (sprintId: string, type: 'completed' | 'all') => {
-    console.log('Close Sprint clicked for sprint:', sprintId, 'type:', type);
-    // Will implement in Sprint 5
+    closeSprint(sprintId, type);
   };
 
   const handleToggleStory = (storyId: string) => {
@@ -156,12 +157,7 @@ function App() {
                 onMoveStory={handleMoveStory}
               />
             ) : (
-              <div className="p-6 max-w-none mx-auto">
-                <h1 className="text-3xl font-bold text-text-primary mb-8">Archive</h1>
-                <div className="bg-bg-primary border border-border-default rounded-xl p-8 text-center">
-                  <p className="text-text-tertiary">Archive view will be implemented in Sprint 5</p>
-                </div>
-              </div>
+              <ArchiveView />
             )}
 
             <AddStoryModal
