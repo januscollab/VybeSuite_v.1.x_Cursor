@@ -69,15 +69,18 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
 
   // Sort sprints by position to ensure Priority Sprint is always first
   const sortedSprints = [...sprints].sort((a, b) => {
-    // Sort by position, with Priority Sprint always first
-    const aPos = a.id === 'priority' ? -1 : (a.isBacklog ? 1000 : a.position || 0);
-    const bPos = b.id === 'priority' ? -1 : (b.isBacklog ? 1000 : b.position || 0);
+    // Sort by position, with Priority Sprint always first, backlog always last
+    const aPos = a.id === 'priority' ? -1 : (a.isBacklog ? 1000 : (a.position || 0));
+    const bPos = b.id === 'priority' ? -1 : (b.isBacklog ? 1000 : (b.position || 0));
     return aPos - bPos;
   });
 
   const prioritySprint = sortedSprints.find(s => s.id === 'priority');
-  const draggableSprints = sortedSprints.filter(s => s.id !== 'priority' && !s.isBacklog);
+  const userSprints = sortedSprints.filter(s => s.id !== 'priority' && !s.isBacklog);
   const backlogSprint = sortedSprints.find(s => s.isBacklog);
+
+  // Combine Priority Sprint with user sprints for unified grid layout
+  const allNonBacklogSprints = prioritySprint ? [prioritySprint, ...userSprints] : userSprints;
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
@@ -85,35 +88,11 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
         <h1 className="text-3xl font-bold text-text-primary mb-8">Sprint Board</h1>
         
         {/* 
-          PRIORITY SPRINT SECTION - ALWAYS 50% WIDTH
-          The Priority Sprint is always rendered first and takes exactly 50% width
+          ALL NON-BACKLOG SPRINTS - UNIFIED 2-COLUMN GRID
+          Priority Sprint + User Sprints all follow the 50% width rule
+          Priority Sprint is always first, user sprints can fill remaining slots
         */}
-        {prioritySprint && (
-          <div className="grid grid-cols-2 gap-5 mb-5">
-            <DroppableSprintCard
-              id={prioritySprint.id}
-              title={prioritySprint.title}
-              icon={prioritySprint.icon}
-              stories={prioritySprint.stories}
-              stats={getSprintStats(prioritySprint.id)}
-              operationLoading={operationLoading}
-              onAddStory={() => onAddStory(prioritySprint.id)}
-              onOpenSprint={() => onOpenSprint(prioritySprint.id)}
-              onCloseSprint={(type) => onCloseSprint(prioritySprint.id, type)}
-              onDeleteSprint={() => onDeleteSprint(prioritySprint.id)}
-              onToggleStory={onToggleStory}
-            />
-            {/* Empty space to maintain 50% width for Priority Sprint */}
-            <div></div>
-          </div>
-        )}
-        
-        {/* 
-          USER-DEFINED SPRINTS SECTION - ALL 50% WIDTH
-          All user-defined sprints are arranged in a 2-column grid
-          Each sprint takes exactly 50% width (one column)
-        */}
-        {draggableSprints.length > 0 && (
+        {allNonBacklogSprints.length > 0 && (
           <Droppable droppableId="sprints" type="sprint" direction="vertical">
             {(provided, snapshot) => (
               <div
@@ -124,12 +103,16 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
                 }`}
               >
                 {/* 
-                  2-COLUMN GRID FOR USER SPRINTS - ENFORCES 50% WIDTH RULE
+                  2-COLUMN GRID FOR ALL NON-BACKLOG SPRINTS - ENFORCES 50% WIDTH RULE
                   Each sprint occupies exactly one column (50% width)
                 */}
                 <div className="grid grid-cols-2 gap-5">
-                  {draggableSprints.map((sprint, index) => (
-                    <Draggable key={sprint.id} draggableId={sprint.id} index={index} type="sprint">
+                  {allNonBacklogSprints.map((sprint, index) => {
+                    // Only user sprints are draggable, not Priority Sprint
+                    const isDraggableSpring = sprint.id !== 'priority' && sprint.isDraggable;
+                    
+                    return isDraggableSpring ? (
+                      <Draggable key={sprint.id} draggableId={sprint.id} index={index - 1} type="sprint">
                       {(provided, snapshot) => (
                         <div
                           ref={provided.innerRef}
@@ -144,7 +127,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
                             icon={sprint.icon}
                             stories={sprint.stories}
                             stats={getSprintStats(sprint.id)}
-                            isDraggable={sprint.isDraggable}
+                            isDraggable={isDraggableSpring}
                             operationLoading={operationLoading}
                             dragHandleProps={provided.dragHandleProps}
                             onAddStory={() => onAddStory(sprint.id)}
@@ -155,14 +138,32 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
                           />
                         </div>
                       )}
-                    </Draggable>
-                  ))}
+                      </Draggable>
+                    ) : (
+                      // Priority Sprint - not draggable
+                      <DroppableSprintCard
+                        key={sprint.id}
+                        id={sprint.id}
+                        title={sprint.title}
+                        icon={sprint.icon}
+                        stories={sprint.stories}
+                        stats={getSprintStats(sprint.id)}
+                        isDraggable={false}
+                        operationLoading={operationLoading}
+                        onAddStory={() => onAddStory(sprint.id)}
+                        onOpenSprint={() => onOpenSprint(sprint.id)}
+                        onCloseSprint={(type) => onCloseSprint(sprint.id, type)}
+                        onDeleteSprint={() => onDeleteSprint(sprint.id)}
+                        onToggleStory={onToggleStory}
+                      />
+                    );
+                  })}
                   
                   {/* 
-                    FILL EMPTY SPACE IF ODD NUMBER OF SPRINTS
+                    FILL EMPTY SPACE IF ODD NUMBER OF NON-BACKLOG SPRINTS
                     Ensures grid layout remains consistent
                   */}
-                  {draggableSprints.length % 2 === 1 && <div></div>}
+                  {allNonBacklogSprints.length % 2 === 1 && <div></div>}
                 </div>
                 {provided.placeholder}
               </div>

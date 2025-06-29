@@ -25,7 +25,7 @@ export const SPRINT_LAYOUT_RULES = {
     POSITION: 0,
     IS_DRAGGABLE: false,
     IS_DELETABLE: false,
-    GRID_COLUMN: 1, // Always first column in 2-column grid
+    GRID_COLUMN: 1, // Always first position in grid
   },
   
   /**
@@ -36,6 +36,7 @@ export const SPRINT_LAYOUT_RULES = {
     IS_DRAGGABLE: true,
     IS_DELETABLE: true,
     GRID_LAYOUT: '2-column', // Always arranged in 2-column grid
+    CAN_SIT_ALONGSIDE_PRIORITY: true, // Can occupy the space next to Priority Sprint
   },
   
   /**
@@ -68,6 +69,26 @@ export const GRID_LAYOUT = {
    */
   SECTION_MARGIN: 'mb-5',
 } as const;
+
+/**
+ * Layout Structure:
+ * 
+ * ┌─────────────────┬─────────────────┐
+ * │ Priority Sprint │ User Sprint 1   │ ← 50% each
+ * ├─────────────────┼─────────────────┤
+ * │ User Sprint 2   │ User Sprint 3   │ ← 50% each
+ * ├─────────────────┼─────────────────┤
+ * │ User Sprint 4   │ User Sprint 5   │ ← 50% each
+ * ├─────────────────┴─────────────────┤
+ * │        Backlog Sprint             │ ← 100% (exception)
+ * └───────────────────────────────────┘
+ * 
+ * Key Points:
+ * - Priority Sprint always takes the first position (top-left)
+ * - User sprints can fill any remaining 50% slots, including next to Priority
+ * - All non-backlog sprints are exactly 50% width
+ * - Backlog is always full width and last
+ */
 
 /**
  * Validation function to ensure sprint layout rules are followed
