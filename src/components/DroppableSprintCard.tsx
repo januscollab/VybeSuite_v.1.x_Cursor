@@ -81,6 +81,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
 
           <button
             onClick={onOpenSprint}
+            disabled={stats.todo === 0}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary rounded-md transition-all"
           >
             <Play className="w-4 h-4" />
@@ -89,7 +90,8 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
 
           <div className="relative">
             <button
-              onClick={() => setShowCloseDropdown(!showCloseDropdown)}
+              onMouseEnter={() => setShowCloseDropdown(true)}
+              onMouseLeave={() => setShowCloseDropdown(false)}
               className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary rounded-md transition-all"
             >
               <FileText className="w-4 h-4" />
@@ -99,13 +101,15 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
 
             {showCloseDropdown && (
               <div className="absolute top-full right-0 mt-1 bg-bg-primary border border-border-default rounded-lg shadow-devsuite-hover z-50 min-w-44 overflow-hidden">
+                onMouseEnter={() => setShowCloseDropdown(true)}
+                onMouseLeave={() => setShowCloseDropdown(false)}
                 <button
                   onClick={() => {
                     handleCloseSprint(id, 'completed');
                     setShowCloseDropdown(false);
                   }}
                   disabled={stats.done === 0}
-                  className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors border-b border-border-subtle disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-text-secondary"
+                  className="flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors border-b border-border-subtle disabled:opacity-50 disabled:cursor-not-allowed disabled:text-text-disabled disabled:hover:bg-transparent disabled:hover:text-text-disabled text-text-secondary hover:bg-bg-muted hover:text-text-primary"
                 >
                   Close Completed
                 </button>

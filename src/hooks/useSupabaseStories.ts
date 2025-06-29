@@ -126,6 +126,7 @@ export const useSupabaseStories = () => {
             completed: story.completed,
             date: story.date,
             tags: story.tags || [],
+            completedAt: story.completed_at,
             sprintId: story.sprint_id,
             createdAt: story.created_at,
             updatedAt: story.updated_at,
@@ -143,173 +144,15 @@ export const useSupabaseStories = () => {
   // Handle real-time sprint changes
   const handleSprintChange = useCallback((payload: RealtimePostgresChangesPayload<any>) => {
     console.log('Sprint change detected:', payload.eventType, payload);
-    
-    switch (payload.eventType) {
-      case 'INSERT':
-        if (payload.new) {
-          const newSprint: Sprint = {
-            id: payload.new.id,
-            title: payload.new.title,
-            icon: payload.new.icon,
-            isBacklog: payload.new.is_backlog,
-            isDraggable: payload.new.is_draggable,
-            stories: []
-          };
-          
-          setSprints(prev => {
-            const exists = prev.find(s => s.id === newSprint.id);
-            if (exists) return prev;
-            return [...prev, newSprint].sort((a, b) => {
-              const aPos = a.id === 'priority' ? 0 : a.id === 'development' ? 1 : 2;
-              const bPos = b.id === 'priority' ? 0 : b.id === 'development' ? 1 : 2;
-              return aPos - bPos;
-            });
-          });
-        }
-        break;
-        
-      case 'UPDATE':
-        if (payload.new) {
-          setSprints(prev => prev.map(sprint => 
-            sprint.id === payload.new.id 
-              ? {
-                  ...sprint,
-                  title: payload.new.title,
-                  icon: payload.new.icon,
-                  isBacklog: payload.new.is_backlog,
-                  isDraggable: payload.new.is_draggable
-                }
-              : sprint
-          ));
-        }
-        break;
-        
-      case 'DELETE':
-        if (payload.old) {
-          setSprints(prev => prev.filter(sprint => sprint.id !== payload.old.id));
-        }
-        break;
-    }
+    // Simplified: just reload data for any sprint change
+    loadData();
   }, []);
 
   // Handle real-time story changes
   const handleStoryChange = useCallback((payload: RealtimePostgresChangesPayload<any>) => {
     console.log('Story change detected:', payload.eventType, payload);
-    
-    switch (payload.eventType) {
-      case 'INSERT':
-        if (payload.new) {
-          const newStory: Story = {
-            id: payload.new.id,
-            number: payload.new.number,
-            title: payload.new.title,
-            description: payload.new.description || '',
-            completed: payload.new.completed,
-            date: payload.new.date,
-            tags: payload.new.tags || [],
-            sprintId: payload.new.sprint_id,
-            createdAt: payload.new.created_at,
-            updatedAt: payload.new.updated_at
-          };
-          
-          setSprints(prev => prev.map(sprint => 
-            sprint.id === newStory.sprintId
-              ? {
-                  ...sprint,
-                  stories: [...sprint.stories, newStory].sort((a, b) => {
-                    // Sort by position, with new story at the correct position
-                    const aPos = a.id === newStory.id ? payload.new.position : 
-                      sprint.stories.findIndex(s => s.id === a.id);
-                    const bPos = b.id === newStory.id ? payload.new.position : 
-                      sprint.stories.findIndex(s => s.id === b.id);
-                    return aPos - bPos;
-                  })
-                }
-              : sprint
-          ));
-        }
-        break;
-        
-      case 'UPDATE':
-        if (payload.new && payload.old) {
-          const updatedStory: Story = {
-            id: payload.new.id,
-            number: payload.new.number,
-            title: payload.new.title,
-            description: payload.new.description || '',
-            completed: payload.new.completed,
-            date: payload.new.date,
-            tags: payload.new.tags || [],
-            sprintId: payload.new.sprint_id,
-            createdAt: payload.new.created_at,
-            updatedAt: payload.new.updated_at
-          };
-          
-          const oldSprintId = payload.old.sprint_id;
-          const newSprintId = payload.new.sprint_id;
-          
-          setSprints(prev => {
-            let updated = [...prev];
-            
-            // If story moved between sprints
-            if (oldSprintId !== newSprintId) {
-              // Remove from old sprint
-              updated = updated.map(sprint => 
-                sprint.id === oldSprintId
-                  ? { ...sprint, stories: sprint.stories.filter(s => s.id !== updatedStory.id) }
-                  : sprint
-              );
-              
-              // Add to new sprint
-              updated = updated.map(sprint => 
-                sprint.id === newSprintId
-                  ? { 
-                      ...sprint, 
-                      stories: [...sprint.stories, updatedStory].sort((a, b) => {
-                        const aPos = a.id === updatedStory.id ? payload.new.position : 
-                          updated.find(s => s.id === newSprintId)?.stories.findIndex(s => s.id === a.id) ?? 999;
-                        const bPos = b.id === updatedStory.id ? payload.new.position : 
-                          updated.find(s => s.id === newSprintId)?.stories.findIndex(s => s.id === b.id) ?? 999;
-                        return aPos - bPos;
-                      })
-                    }
-                  : sprint
-              );
-            } else {
-              // Update story in same sprint
-              updated = updated.map(sprint => 
-                sprint.id === newSprintId
-                  ? {
-                      ...sprint,
-                      stories: sprint.stories.map(story => 
-                        story.id === updatedStory.id ? updatedStory : story
-                      ).sort((a, b) => {
-                        // Re-sort based on position
-                        const aPos = a.id === updatedStory.id ? payload.new.position : 
-                          sprint.stories.findIndex(s => s.id === a.id);
-                        const bPos = b.id === updatedStory.id ? payload.new.position : 
-                          sprint.stories.findIndex(s => s.id === b.id);
-                        return aPos - bPos;
-                      })
-                    }
-                  : sprint
-              );
-            }
-            
-            return updated;
-          });
-        }
-        break;
-        
-      case 'DELETE':
-        if (payload.old) {
-          setSprints(prev => prev.map(sprint => ({
-            ...sprint,
-            stories: sprint.stories.filter(story => story.id !== payload.old.id)
-          })));
-        }
-        break;
-    }
+    // Simplified: just reload data for any story change
+    loadData();
   }, []);
 
   // Set up real-time subscriptions
@@ -430,10 +273,7 @@ export const useSupabaseStories = () => {
 
       console.log('Story added successfully:', data);
       
-      // Force a refresh if real-time doesn't work immediately
-      setTimeout(() => {
-        loadData();
-      }, 100);
+      // Real-time subscription will handle the update
 
       return data;
     } catch (err) {
@@ -446,16 +286,17 @@ export const useSupabaseStories = () => {
   // Toggle story completion
   const toggleStory = useCallback(async (storyId: string) => {
     try {
-      // Get current story state
-      const { data: currentStory, error: fetchError } = await supabase
-        .from('stories')
-        .select('completed')
-        .eq('id', storyId)
-        .single();
+      // Get current story state first
+      const currentSprint = sprints.find(sprint => 
+        sprint.stories.some(story => story.id === storyId)
+      );
+      const currentStory = currentSprint?.stories.find(story => story.id === storyId);
+      
+      if (!currentStory) {
+        throw new Error('Story not found');
+      }
 
-      if (fetchError) throw fetchError;
-
-      // Update story
+      // Update story with new completion status
       const { error: updateError } = await supabase
         .from('stories')
         .update({ 
@@ -466,8 +307,7 @@ export const useSupabaseStories = () => {
 
       if (updateError) throw updateError;
 
-      // Real-time subscription will handle the update
-      console.log('Story toggled successfully, real-time sync will update UI');
+      console.log('Story toggled successfully');
     } catch (err) {
       console.error('Error toggling story:', err);
       setError(err instanceof Error ? err.message : 'Failed to update story');
@@ -565,8 +405,7 @@ export const useSupabaseStories = () => {
         throw new Error(`Failed to update ${errors.length} stories: ${errors[0].error?.message}`);
       }
 
-      // Real-time subscription will handle the update
-      console.log('Story moved successfully, real-time sync will update UI');
+      console.log('Story moved successfully');
     } catch (err) {
       console.error('Error moving story:', err);
       setError(err instanceof Error ? err.message : 'Failed to move story');

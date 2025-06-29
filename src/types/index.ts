@@ -4,6 +4,7 @@ export interface Story {
   title: string;
   description?: string;
   completed: boolean;
+  completedAt?: string | null;
   date: string;
   tags: string[];
   sprintId: string;

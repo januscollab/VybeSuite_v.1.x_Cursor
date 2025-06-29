@@ -65,6 +65,7 @@ export interface Database {
           created_at: string;
           updated_at: string;
           archived_at: string | null;
+          completed_at: string | null;
         };
         Insert: {
           id?: string;
@@ -79,6 +80,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           archived_at?: string | null;
+          completed_at?: string | null;
         };
         Update: {
           id?: string;
@@ -93,6 +95,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
           archived_at?: string | null;
+          completed_at?: string | null;
         };
       };
     };
