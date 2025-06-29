@@ -46,7 +46,7 @@ export const SprintCard: React.FC<SprintCardProps> = ({
       {storiesToRender.map((story) => (
         <div
           key={story.id}
-          className="bg-bg-secondary border border-border-subtle rounded-lg p-3 flex items-center gap-3 transition-all hover:bg-bg-muted hover:border-border-default hover:shadow-sm cursor-move"
+          className="bg-bg-secondary border border-border-subtle rounded-lg p-3 flex items-center gap-3 transition-all hover:bg-bg-muted hover:border-border-default hover:shadow-sm"
         >
           <span className="text-text-quaternary cursor-grab font-bold text-xs">::</span>
           
