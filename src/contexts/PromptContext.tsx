@@ -4,13 +4,15 @@ import { useAuth } from './AuthContext';
 // Import prompt files as raw text using Vite's raw import feature
 import claudePrompt from '../../prompts/userstory_claude.txt?raw';
 import chatgptPrompt from '../../prompts/userstory_chatgpt.txt?raw';
+import claudeGithubPrompt from '../../prompts/userstory_claude_github.txt?raw';
 
 interface PromptContextType {
   prompts: {
     claude: string;
     chatgpt: string;
+    claudeGithub: string;
   };
-  getStoryGenerationPrompt: (provider: 'openai' | 'anthropic') => string;
+  getStoryGenerationPrompt: (provider: 'openai' | 'anthropic', includeGithubCodeReview?: boolean) => string;
   isLoaded: boolean;
 }
 
@@ -29,7 +31,8 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isLoaded, setIsLoaded] = useState(false);
   const [prompts, setPrompts] = useState({
     claude: '',
-    chatgpt: ''
+    chatgpt: '',
+    claudeGithub: ''
   });
 
   // Load prompts when user is authenticated
@@ -38,7 +41,8 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Load the imported prompt content
       setPrompts({
         claude: claudePrompt,
-        chatgpt: chatgptPrompt
+        chatgpt: chatgptPrompt,
+        claudeGithub: claudeGithubPrompt
       });
       setIsLoaded(true);
       console.log('AI prompts loaded successfully');
@@ -46,12 +50,13 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setIsLoaded(false);
       setPrompts({
         claude: '',
-        chatgpt: ''
+        chatgpt: '',
+        claudeGithub: ''
       });
     }
   }, [user]);
 
-  const getStoryGenerationPrompt = (provider: 'openai' | 'anthropic'): string => {
+  const getStoryGenerationPrompt = (provider: 'openai' | 'anthropic', includeGithubCodeReview: boolean = false): string => {
     if (!isLoaded) {
       console.warn('Prompts not loaded yet, using fallback');
       return 'You are an expert Agile/Scrum story writer. Generate a user story based on the given prompt.';
@@ -59,7 +64,7 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     switch (provider) {
       case 'anthropic':
-        return prompts.claude;
+        return includeGithubCodeReview ? prompts.claudeGithub : prompts.claude;
       case 'openai':
         return prompts.chatgpt;
       default:

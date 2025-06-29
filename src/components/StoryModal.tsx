@@ -160,23 +160,12 @@ export const StoryModal: React.FC<StoryModalProps> = ({
     
     try {
       const systemPrompt = getStoryGenerationPrompt(selectedProvider);
-      
-      // Modify the prompt if GitHub code review is requested for Claude
-      let finalPrompt = storyPrompt;
-      if (selectedProvider === 'anthropic' && includeGithubCodeReview) {
-        finalPrompt = `${storyPrompt}
-
-Additional requirement: Include GitHub code review considerations in the story description, such as:
-- Code review checklist items
-- Pull request requirements
-- Review criteria and standards
-- Documentation requirements for reviewers`;
-      }
+      const systemPrompt = getStoryGenerationPrompt(selectedProvider, includeGithubCodeReview);
       
       const result = await generateStory({
         provider: selectedProvider,
         model,
-        prompt: finalPrompt,
+        prompt: storyPrompt,
         apiKey,
         systemPrompt
       });
