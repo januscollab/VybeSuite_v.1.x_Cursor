@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Sparkles, Tag } from 'lucide-react';
+import { X, Sparkles } from 'lucide-react';
 import { AddStoryFormData } from '../types';
 
 interface AddStoryModalProps {
@@ -9,12 +9,6 @@ interface AddStoryModalProps {
   onClose: () => void;
   onSubmit: (sprintId: string, title: string, description: string, tags: string[]) => void;
 }
-
-const predefinedTags = [
-  'frontend', 'backend', 'api', 'ui', 'ux', 'database', 'testing', 
-  'security', 'performance', 'mobile', 'responsive', 'authentication',
-  'integration', 'feature', 'bugfix', 'enhancement', 'documentation'
-];
 
 export const AddStoryModal: React.FC<AddStoryModalProps> = ({
   isOpen,
@@ -28,14 +22,20 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
     description: '',
     tags: []
   });
-  const [newTag, setNewTag] = useState('');
+  const [storyPrompt, setStoryPrompt] = useState('');
+  const [priority, setPriority] = useState('medium');
+  const [risk, setRisk] = useState('none');
+  const [tagInput, setTagInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
   // Reset form when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
       setFormData({ title: '', description: '', tags: [] });
-      setNewTag('');
+      setStoryPrompt('');
+      setPriority('medium');
+      setRisk('none');
+      setTagInput('');
       setIsGenerating(false);
     }
   }, [isOpen]);
@@ -60,15 +60,22 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
     }
   };
 
+  const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
+      addTag(tagInput.trim());
+      setTagInput('');
+    }
+  };
+
   const addTag = (tag: string) => {
-    const trimmedTag = tag.trim().toLowerCase();
+    const trimmedTag = tag.toLowerCase();
     if (trimmedTag && !formData.tags.includes(trimmedTag)) {
       setFormData(prev => ({
         ...prev,
         tags: [...prev.tags, trimmedTag]
       }));
     }
-    setNewTag('');
   };
 
   const removeTag = (tagToRemove: string) => {
@@ -78,47 +85,91 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
     }));
   };
 
+  const generateStoryTitle = (prompt: string) => {
+    const cleanPrompt = prompt.toLowerCase().trim();
+    if (cleanPrompt.includes('login')) {
+      return 'As a user, I want to securely log in to my account so that I can access my personalized dashboard';
+    } else if (cleanPrompt.includes('registration') || cleanPrompt.includes('register')) {
+      return 'As a new user, I want to create an account so that I can access the platform features';
+    } else if (cleanPrompt.includes('form')) {
+      return 'As a user, I want to submit a form so that I can provide required information';
+    } else {
+      return `As a user, I want to ${cleanPrompt} so that I can achieve my goals`;
+    }
+  };
+
+  const generateDescription = (prompt: string) => {
+    const cleanPrompt = prompt.toLowerCase().trim();
+    if (cleanPrompt.includes('login')) {
+      return `Implement a secure user authentication system with the following requirements:
+
+Acceptance Criteria:
+- User can enter email and password
+- Form validates input before submission
+- Successful login redirects to dashboard
+- Failed login shows error message
+- Include "Remember Me" option
+- Support password reset functionality
+
+Technical Requirements:
+- Use secure authentication protocols
+- Implement rate limiting for security
+- Add proper error handling
+- Ensure responsive design`;
+    } else {
+      return `Detailed implementation requirements for: ${prompt}
+
+Acceptance Criteria:
+- [Define specific user acceptance criteria]
+- [Include edge cases and error handling]
+- [Specify expected user interactions]
+
+Technical Requirements:
+- [List technical specifications]
+- [Define performance requirements]
+- [Include security considerations]`;
+    }
+  };
+
+  const generateTags = (prompt: string) => {
+    const cleanPrompt = prompt.toLowerCase();
+    const tagMap: { [key: string]: string[] } = {
+      'login': ['authentication', 'security', 'frontend', 'backend'],
+      'registration': ['user-management', 'forms', 'validation', 'frontend'],
+      'form': ['forms', 'validation', 'frontend', 'ui'],
+      'api': ['backend', 'api', 'integration'],
+      'database': ['backend', 'database', 'storage'],
+      'ui': ['frontend', 'ui', 'design'],
+      'mobile': ['mobile', 'responsive', 'frontend']
+    };
+    
+    let suggestedTags: string[] = [];
+    for (const [keyword, tags] of Object.entries(tagMap)) {
+      if (cleanPrompt.includes(keyword)) {
+        suggestedTags.push(...tags);
+      }
+    }
+    
+    return [...new Set(suggestedTags)].slice(0, 4);
+  };
+
   const handleGenerateStory = async () => {
+    if (!storyPrompt.trim()) return;
+    
     setIsGenerating(true);
     
-    // Mock AI generation with realistic delay
+    // Simulate AI generation with realistic delay
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    const mockGeneratedStories = [
-      {
-        title: 'Implement user profile management system',
-        description: 'Create a comprehensive user profile system that allows users to update their personal information, preferences, and account settings. Include validation, error handling, and real-time updates.',
-        tags: ['frontend', 'backend', 'api', 'ux']
-      },
-      {
-        title: 'Add real-time notification system',
-        description: 'Develop a notification system that provides instant updates to users about important events, messages, and system alerts. Include push notifications and in-app notifications.',
-        tags: ['realtime', 'notifications', 'websockets', 'feature']
-      },
-      {
-        title: 'Optimize database query performance',
-        description: 'Analyze and optimize slow database queries to improve application performance. Add proper indexing, query optimization, and caching strategies.',
-        tags: ['database', 'performance', 'optimization', 'backend']
-      },
-      {
-        title: 'Implement advanced search functionality',
-        description: 'Create a powerful search system with filters, sorting, and autocomplete features. Include full-text search capabilities and search result highlighting.',
-        tags: ['search', 'frontend', 'api', 'feature']
-      },
-      {
-        title: 'Add comprehensive error handling',
-        description: 'Implement robust error handling throughout the application with user-friendly error messages, logging, and recovery mechanisms.',
-        tags: ['error-handling', 'ux', 'reliability', 'backend']
-      }
-    ];
-
-    const randomStory = mockGeneratedStories[Math.floor(Math.random() * mockGeneratedStories.length)];
+    const generatedTitle = generateStoryTitle(storyPrompt);
+    const generatedDescription = generateDescription(storyPrompt);
+    const suggestedTags = generateTags(storyPrompt);
     
     setFormData(prev => ({
       ...prev,
-      title: randomStory.title,
-      description: randomStory.description,
-      tags: randomStory.tags
+      title: generatedTitle,
+      description: generatedDescription,
+      tags: [...new Set([...prev.tags, ...suggestedTags])]
     }));
     
     setIsGenerating(false);
@@ -127,159 +178,185 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-bg-overlay z-50 flex items-center justify-center p-4">
-      <div className="bg-bg-primary rounded-xl shadow-devsuite-modal border border-border-default w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border-subtle">
-          <div>
-            <h2 className="text-xl font-semibold text-text-primary">Add New Story</h2>
-            <p className="text-sm text-text-tertiary mt-1">Adding to: {sprintTitle}</p>
-          </div>
+    <div className="fixed inset-0 bg-bg-overlay z-50 flex items-center justify-center p-5">
+      <div className="bg-bg-primary rounded-xl shadow-devsuite-modal border border-border-default w-full max-w-[580px] max-h-[95vh] overflow-hidden">
+        {/* Modal Header */}
+        <div className="px-6 py-4 border-b border-border-default relative">
+          <h1 className="text-2xl font-bold text-text-primary mb-0">Add New Story</h1>
+          <p className="text-base text-text-tertiary leading-6">Adding to: {sprintTitle}</p>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-bg-muted rounded-lg transition-colors"
+            className="absolute top-3 right-5 w-8 h-8 border-none bg-transparent cursor-pointer rounded-md flex items-center justify-center text-text-quaternary hover:bg-bg-canvas hover:text-text-secondary transition-all"
           >
-            <X className="w-5 h-5 text-text-quaternary" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* AI Generate Button */}
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={handleGenerateStory}
-                disabled={isGenerating}
-                className="flex items-center gap-2 px-4 py-2 bg-devsuite-tertiary text-text-inverse rounded-lg hover:bg-devsuite-tertiary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Sparkles className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
-                {isGenerating ? 'Generating Story...' : 'Generate Story with AI'}
-              </button>
-            </div>
-
-            {/* Title */}
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-text-primary mb-2">
-                Story Title *
+        {/* Modal Body */}
+        <div className="px-6 py-4 overflow-y-auto max-h-[calc(95vh-140px)]">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            {/* Story Title */}
+            <div className="mb-3">
+              <label htmlFor="storyTitle" className="block font-semibold text-[13px] mb-1 text-text-primary">
+                Story Title <span className="text-error ml-0.5">*</span>
               </label>
               <input
-                id="title"
+                id="storyTitle"
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Enter a clear, actionable story title..."
-                className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-devsuite-primary focus:border-transparent bg-bg-primary text-text-primary placeholder-text-placeholder"
+                placeholder="Enter story title..."
+                className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit"
                 required
               />
             </div>
 
+            {/* Story Prompt */}
+            <div className="mb-3">
+              <label htmlFor="storyPrompt" className="block font-semibold text-[13px] mb-1 text-text-primary">
+                Story Prompt (AI assistance)
+              </label>
+              <textarea
+                id="storyPrompt"
+                value={storyPrompt}
+                onChange={(e) => setStoryPrompt(e.target.value)}
+                placeholder="Describe what you want to build... (e.g., 'Create a user login form with email validation')"
+                className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit resize-none min-h-[80px]"
+              />
+              {storyPrompt.trim() && (
+                <button
+                  type="button"
+                  onClick={handleGenerateStory}
+                  disabled={isGenerating}
+                  className="flex items-center gap-1 px-2.5 py-1.5 bg-transparent text-devsuite-primary text-xs font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all mt-1.5 hover:bg-devsuite-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Sparkles className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+                  {isGenerating ? 'Generating...' : 'Generate Story'}
+                </button>
+              )}
+            </div>
+
             {/* Description */}
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-text-primary mb-2">
+            <div className="mb-3">
+              <label htmlFor="description" className="block font-semibold text-[13px] mb-1 text-text-primary">
                 Description
               </label>
               <textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Provide additional context, acceptance criteria, or implementation details..."
-                rows={4}
-                className="w-full px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-devsuite-primary focus:border-transparent bg-bg-primary text-text-primary placeholder-text-placeholder resize-none"
+                placeholder="Detailed description of the story..."
+                className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit resize-vertical min-h-[70px]"
               />
+              <div className="text-[11px] text-text-tertiary mt-0.5">
+                Provide detailed requirements, acceptance criteria, and any additional context
+              </div>
+            </div>
+
+            {/* Priority and Risk Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              {/* Priority */}
+              <div>
+                <label htmlFor="priority" className="block font-semibold text-[13px] mb-1 text-text-primary">
+                  Priority
+                </label>
+                <div className="relative">
+                  <select
+                    id="priority"
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value)}
+                    className="w-full px-3 py-2.5 pr-9 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] cursor-pointer appearance-none font-inherit"
+                  >
+                    <option value="">Select priority...</option>
+                    <option value="critical">🔴 Critical</option>
+                    <option value="high">🟠 High</option>
+                    <option value="medium">🟡 Medium</option>
+                    <option value="low">🟢 Low</option>
+                  </select>
+                  <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-quaternary pointer-events-none w-4 h-4 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="6,9 12,15 18,9"></polyline>
+                  </svg>
+                </div>
+              </div>
+
+              {/* Risk Level */}
+              <div>
+                <label htmlFor="risk" className="block font-semibold text-[13px] mb-1 text-text-primary">
+                  Risk (of Breaking Change)
+                </label>
+                <div className="relative">
+                  <select
+                    id="risk"
+                    value={risk}
+                    onChange={(e) => setRisk(e.target.value)}
+                    className="w-full px-3 py-2.5 pr-9 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] cursor-pointer appearance-none font-inherit"
+                  >
+                    <option value="">Select risk level...</option>
+                    <option value="high">⚠️ High - Major breaking changes expected</option>
+                    <option value="medium">🟡 Medium - Some breaking changes possible</option>
+                    <option value="low">✅ Low - Minimal impact expected</option>
+                    <option value="none">🟢 None - Safe changes only</option>
+                  </select>
+                  <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-quaternary pointer-events-none w-4 h-4 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="6,9 12,15 18,9"></polyline>
+                  </svg>
+                </div>
+              </div>
             </div>
 
             {/* Tags */}
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
+            <div className="mb-3">
+              <label htmlFor="tags" className="block font-semibold text-[13px] mb-1 text-text-primary">
                 Tags
               </label>
-              
-              {/* Current Tags */}
-              {formData.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {formData.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-devsuite-primary-subtle text-devsuite-primary text-xs rounded-md"
+              <div className="border-2 border-border-default rounded-lg bg-bg-primary p-1.5 min-h-[40px] flex flex-wrap gap-1.5 items-start transition-all focus-within:border-devsuite-primary focus-within:shadow-[0_0_0_3px_rgba(252,128,25,0.1)]">
+                {formData.tags.map((tag) => (
+                  <div
+                    key={tag}
+                    className="bg-devsuite-primary-subtle text-devsuite-primary px-2 py-1 rounded-2xl text-xs font-medium flex items-center gap-1"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="bg-transparent border-none text-devsuite-primary cursor-pointer p-0 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[10px] leading-none hover:bg-devsuite-primary hover:text-white"
                     >
-                      <Tag className="w-3 h-3" />
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="ml-1 hover:text-devsuite-primary-hover"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Add New Tag */}
-              <div className="flex gap-2 mb-3">
+                      ×
+                    </button>
+                  </div>
+                ))}
                 <input
                   type="text"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addTag(newTag);
-                    }
-                  }}
-                  placeholder="Add a tag..."
-                  className="flex-1 px-3 py-2 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-devsuite-primary focus:border-transparent bg-bg-primary text-text-primary placeholder-text-placeholder text-sm"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleTagInput}
+                  placeholder="Add tags (press Enter to add)..."
+                  className="border-none outline-none bg-transparent flex-1 min-w-[100px] p-1.5 text-[13px] text-text-primary placeholder-text-placeholder"
                 />
-                <button
-                  type="button"
-                  onClick={() => addTag(newTag)}
-                  className="px-3 py-2 bg-devsuite-primary text-text-inverse rounded-lg hover:bg-devsuite-primary-hover transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
               </div>
-
-              {/* Predefined Tags */}
-              <div>
-                <p className="text-xs text-text-tertiary mb-2">Quick add:</p>
-                <div className="flex flex-wrap gap-1">
-                  {predefinedTags
-                    .filter(tag => !formData.tags.includes(tag))
-                    .slice(0, 12)
-                    .map((tag) => (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => addTag(tag)}
-                        className="px-2 py-1 text-xs bg-bg-muted text-text-secondary rounded border border-border-subtle hover:bg-devsuite-primary-subtle hover:text-devsuite-primary hover:border-devsuite-primary transition-colors"
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                </div>
+              <div className="text-[11px] text-text-tertiary mt-0.5">
+                Add relevant tags like frontend, backend, ui, api, etc.
               </div>
             </div>
           </form>
         </div>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-3 p-6 border-t border-border-subtle bg-bg-secondary">
+        {/* Modal Footer */}
+        <div className="px-6 py-3 border-t border-border-default flex justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-bg-muted rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-transparent text-text-secondary text-[13px] font-medium cursor-pointer border-none rounded-md transition-all hover:bg-devsuite-primary/10 hover:text-devsuite-primary"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={!formData.title.trim()}
-            className="px-4 py-2 bg-devsuite-primary text-text-inverse rounded-lg hover:bg-devsuite-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 px-3 py-2 bg-transparent text-text-secondary text-[13px] font-medium cursor-pointer border-none rounded-md transition-all hover:bg-devsuite-primary/10 hover:text-devsuite-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Add Story
+            <Sparkles className="w-5 h-5" />
+            Create Story
           </button>
         </div>
       </div>
