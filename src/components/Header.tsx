@@ -57,16 +57,21 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Settings Dropdown */}
             <div className="relative">
               <button
-                onClick={() => setShowSettingsDropdown(!showSettingsDropdown)}
+                onMouseEnter={() => setShowSettingsDropdown(true)}
+                onMouseLeave={() => setShowSettingsDropdown(false)}
                 className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary rounded-md transition-all"
               >
                 <Settings className="w-4 h-4" />
                 Settings
-                <span className="text-xs ml-1">▼</span>
               </button>
 
-              {showSettingsDropdown && (
-                <div className="absolute top-full right-0 mt-1 bg-bg-primary border border-border-default rounded-lg shadow-devsuite-hover z-50 min-w-40 overflow-hidden">
+              <div 
+                className={`absolute top-full right-0 mt-1 bg-bg-primary border border-border-default rounded-lg shadow-devsuite-hover z-50 min-w-40 overflow-hidden transition-all duration-200 ${
+                  showSettingsDropdown ? 'opacity-100 visible' : 'opacity-0 invisible'
+                }`}
+                onMouseEnter={() => setShowSettingsDropdown(true)}
+                onMouseLeave={() => setShowSettingsDropdown(false)}
+              >
                   <button
                     onClick={() => {
                       onAddSprint();
@@ -82,13 +87,22 @@ export const Header: React.FC<HeaderProps> = ({
                       onOpenSettings();
                       setShowSettingsDropdown(false);
                     }}
+                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors border-b border-border-subtle"
+                  >
+                    <Settings className="w-4 h-4" />
+                    AI Settings
+                  </button>
+                  <button
+                    onClick={() => {
+                      console.log('Sprint Settings clicked');
+                      setShowSettingsDropdown(false);
+                    }}
                     className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors"
                   >
                     <Settings className="w-4 h-4" />
                     Sprint Settings
                   </button>
-                </div>
-              )}
+              </div>
             </div>
           </nav>
         </div>

@@ -2,13 +2,18 @@ import React, { useState } from 'react';
 import { Header } from './components/Header';
 import { DragDropSprintBoard } from './components/DragDropSprintBoard';
 import { AddStoryModal } from './components/AddStoryModal';
+import { SettingsModal } from './components/SettingsModal';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useSupabaseStories } from './hooks/useSupabaseStories';
+import { loadAISettings, saveAISettings } from './utils/aiSettings';
+import { AISettings } from './types';
 import { AlertTriangle, Database } from 'lucide-react';
 
 function App() {
   const [activeView, setActiveView] = useState<'active' | 'archive'>('active');
+  const [aiSettings, setAISettings] = useState<AISettings>(loadAISettings());
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [addStoryModal, setAddStoryModal] = useState<{
     isOpen: boolean;
     sprintId: string;
@@ -37,8 +42,12 @@ function App() {
   };
 
   const handleOpenSettings = () => {
-    console.log('Settings clicked');
-    // Will implement in Sprint 4
+    setSettingsModalOpen(true);
+  };
+
+  const handleSaveAISettings = (newSettings: AISettings) => {
+    setAISettings(newSettings);
+    saveAISettings(newSettings);
   };
 
   const handleAddStory = (sprintId: string) => {
@@ -159,8 +168,16 @@ function App() {
               isOpen={addStoryModal.isOpen}
               sprintId={addStoryModal.sprintId}
               sprintTitle={addStoryModal.sprintTitle}
+              aiSettings={aiSettings}
               onClose={handleCloseAddStoryModal}
               onSubmit={handleSubmitStory}
+            />
+
+            <SettingsModal
+              isOpen={settingsModalOpen}
+              settings={aiSettings}
+              onClose={() => setSettingsModalOpen(false)}
+              onSave={handleSaveAISettings}
             />
           </>
         )}

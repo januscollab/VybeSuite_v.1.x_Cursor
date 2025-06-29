@@ -31,3 +31,30 @@ export interface AddStoryFormData {
   description: string;
   tags: string[];
 }
+
+export interface AISettings {
+  openaiApiKey: string;
+  anthropicApiKey: string;
+  defaultProvider: 'openai' | 'anthropic';
+  selectedOpenAIModel: string;
+  selectedAnthropicModel: string;
+}
+
+export interface AIProvider {
+  id: 'openai' | 'anthropic';
+  name: string;
+  models: string[];
+}
+
+export interface AIGenerationRequest {
+  provider: 'openai' | 'anthropic';
+  model: string;
+  prompt: string;
+  apiKey: string;
+}
+
+export interface AIGenerationResponse {
+  title: string;
+  description: string;
+  tags: string[];
+}

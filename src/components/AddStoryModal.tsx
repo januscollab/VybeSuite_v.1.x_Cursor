@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles } from 'lucide-react';
-import { AddStoryFormData } from '../types';
+import { X, Sparkles, AlertCircle } from 'lucide-react';
+import { AddStoryFormData, AISettings } from '../types';
+import { generateStory, AIServiceError } from '../utils/aiService';
+import { AI_PROVIDERS } from '../constants/ai';
 
 interface AddStoryModalProps {
   isOpen: boolean;
   sprintId: string;
   sprintTitle: string;
+  aiSettings: AISettings;
   onClose: () => void;
   onSubmit: (sprintId: string, title: string, description: string, tags: string[]) => void;
 }
@@ -14,6 +17,7 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
   isOpen,
   sprintId,
   sprintTitle,
+  aiSettings,
   onClose,
   onSubmit
 }) => {
@@ -27,6 +31,8 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
   const [risk, setRisk] = useState('none');
   const [tagInput, setTagInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<'openai' | 'anthropic'>(aiSettings.defaultProvider);
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -37,6 +43,8 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
       setRisk('none');
       setTagInput('');
       setIsGenerating(false);
+      setGenerationError(null);
+      setSelectedProvider(aiSettings.defaultProvider);
     }
   }, [isOpen]);
 
@@ -85,94 +93,53 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
     }));
   };
 
-  const generateStoryTitle = (prompt: string) => {
-    const cleanPrompt = prompt.toLowerCase().trim();
-    if (cleanPrompt.includes('login')) {
-      return 'As a user, I want to securely log in to my account so that I can access my personalized dashboard';
-    } else if (cleanPrompt.includes('registration') || cleanPrompt.includes('register')) {
-      return 'As a new user, I want to create an account so that I can access the platform features';
-    } else if (cleanPrompt.includes('form')) {
-      return 'As a user, I want to submit a form so that I can provide required information';
-    } else {
-      return `As a user, I want to ${cleanPrompt} so that I can achieve my goals`;
-    }
-  };
-
-  const generateDescription = (prompt: string) => {
-    const cleanPrompt = prompt.toLowerCase().trim();
-    if (cleanPrompt.includes('login')) {
-      return `Implement a secure user authentication system with the following requirements:
-
-Acceptance Criteria:
-- User can enter email and password
-- Form validates input before submission
-- Successful login redirects to dashboard
-- Failed login shows error message
-- Include "Remember Me" option
-- Support password reset functionality
-
-Technical Requirements:
-- Use secure authentication protocols
-- Implement rate limiting for security
-- Add proper error handling
-- Ensure responsive design`;
-    } else {
-      return `Detailed implementation requirements for: ${prompt}
-
-Acceptance Criteria:
-- [Define specific user acceptance criteria]
-- [Include edge cases and error handling]
-- [Specify expected user interactions]
-
-Technical Requirements:
-- [List technical specifications]
-- [Define performance requirements]
-- [Include security considerations]`;
-    }
-  };
-
-  const generateTags = (prompt: string) => {
-    const cleanPrompt = prompt.toLowerCase();
-    const tagMap: { [key: string]: string[] } = {
-      'login': ['authentication', 'security', 'frontend', 'backend'],
-      'registration': ['user-management', 'forms', 'validation', 'frontend'],
-      'form': ['forms', 'validation', 'frontend', 'ui'],
-      'api': ['backend', 'api', 'integration'],
-      'database': ['backend', 'database', 'storage'],
-      'ui': ['frontend', 'ui', 'design'],
-      'mobile': ['mobile', 'responsive', 'frontend']
-    };
-    
-    let suggestedTags: string[] = [];
-    for (const [keyword, tags] of Object.entries(tagMap)) {
-      if (cleanPrompt.includes(keyword)) {
-        suggestedTags.push(...tags);
-      }
-    }
-    
-    return [...new Set(suggestedTags)].slice(0, 4);
-  };
-
   const handleGenerateStory = async () => {
     if (!storyPrompt.trim()) return;
     
+    const apiKey = selectedProvider === 'openai' ? aiSettings.openaiApiKey : aiSettings.anthropicApiKey;
+    const model = selectedProvider === 'openai' ? aiSettings.selectedOpenAIModel : aiSettings.selectedAnthropicModel;
+    
+    if (!apiKey) {
+      setGenerationError(`Please configure your ${selectedProvider === 'openai' ? 'OpenAI' : 'Anthropic'} API key in settings first.`);
+      return;
+    }
+    
     setIsGenerating(true);
+    setGenerationError(null);
     
-    // Simulate AI generation with realistic delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const generatedTitle = generateStoryTitle(storyPrompt);
-    const generatedDescription = generateDescription(storyPrompt);
-    const suggestedTags = generateTags(storyPrompt);
-    
-    setFormData(prev => ({
-      ...prev,
-      title: generatedTitle,
-      description: generatedDescription,
-      tags: [...new Set([...prev.tags, ...suggestedTags])]
-    }));
-    
-    setIsGenerating(false);
+    try {
+      const result = await generateStory({
+        provider: selectedProvider,
+        model,
+        prompt: storyPrompt,
+        apiKey
+      });
+      
+      setFormData(prev => ({
+        ...prev,
+        title: result.title,
+        description: result.description,
+        tags: [...new Set([...prev.tags, ...result.tags])]
+      }));
+    } catch (error) {
+      console.error('AI generation error:', error);
+      if (error instanceof AIServiceError) {
+        setGenerationError(`${error.provider.toUpperCase()} Error: ${error.message}`);
+      } else {
+        setGenerationError('Failed to generate story. Please try again.');
+      }
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const getProviderName = (providerId: 'openai' | 'anthropic') => {
+    return AI_PROVIDERS.find(p => p.id === providerId)?.name || providerId;
+  };
+
+  const hasValidApiKey = (providerId: 'openai' | 'anthropic') => {
+    const apiKey = providerId === 'openai' ? aiSettings.openaiApiKey : aiSettings.anthropicApiKey;
+    return apiKey && apiKey.trim().length > 0;
   };
 
   if (!isOpen) return null;
@@ -214,8 +181,33 @@ Technical Requirements:
             {/* Story Prompt */}
             <div className="mb-3">
               <label htmlFor="storyPrompt" className="block font-semibold text-[13px] mb-1 text-text-primary">
-                Story Prompt (AI assistance)
+                Story Prompt (AI Assistance)
               </label>
+              
+              {/* AI Provider Selection */}
+              <div className="flex gap-2 mb-2">
+                {AI_PROVIDERS.map((provider) => (
+                  <button
+                    key={provider.id}
+                    type="button"
+                    onClick={() => setSelectedProvider(provider.id)}
+                    disabled={!hasValidApiKey(provider.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                      selectedProvider === provider.id
+                        ? 'bg-devsuite-primary text-text-inverse'
+                        : hasValidApiKey(provider.id)
+                        ? 'bg-bg-muted text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary'
+                        : 'bg-bg-muted text-text-disabled cursor-not-allowed'
+                    }`}
+                  >
+                    {provider.name}
+                    {!hasValidApiKey(provider.id) && (
+                      <AlertCircle className="w-3 h-3" />
+                    )}
+                  </button>
+                ))}
+              </div>
+              
               <textarea
                 id="storyPrompt"
                 value={storyPrompt}
@@ -223,16 +215,33 @@ Technical Requirements:
                 placeholder="Describe what you want to build... (e.g., 'Create a user login form with email validation')"
                 className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit resize-none min-h-[80px]"
               />
+              
+              {/* Generation Error */}
+              {generationError && (
+                <div className="mt-1.5 p-2 bg-error-light border border-error rounded-md">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-error-dark mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-error-dark">{generationError}</p>
+                  </div>
+                </div>
+              )}
+              
               {storyPrompt.trim() && (
                 <button
                   type="button"
                   onClick={handleGenerateStory}
-                  disabled={isGenerating}
+                  disabled={isGenerating || !hasValidApiKey(selectedProvider)}
                   className="flex items-center gap-1 px-2.5 py-1.5 bg-transparent text-devsuite-primary text-xs font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all mt-1.5 hover:bg-devsuite-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Sparkles className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
-                  {isGenerating ? 'Generating...' : 'Generate Story'}
+                  {isGenerating ? 'Generating...' : `Generate with ${getProviderName(selectedProvider)}`}
                 </button>
+              )}
+              
+              {!hasValidApiKey(selectedProvider) && (
+                <div className="text-[11px] text-text-tertiary mt-1">
+                  Configure your {getProviderName(selectedProvider)} API key in settings to use AI generation
+                </div>
               )}
             </div>
 
