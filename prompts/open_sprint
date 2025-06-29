@@ -1,0 +1,30 @@
+// Begin Prompt with 
+
+"Review and Provide a Build Plan for the following features for [Sprint Name] Sprint:
+
+[Story Number]: [Story Title]
+Description: [Description]
+-----
+
+[Story Number]: [Story Title]
+Description: [Description]
+-----
+
+[Story Number]: [Story Title]
+Description: [Description]"
+
+// provide the above prompt format for each story selected 
+
+// append the following to the above portion of the prompt
+
+"Prompt user with the following information and request permission to proceed prior to implementing any change
+1. A Complete Plan for implementing the above story changes
+2. Potential challenges and risks to these changes and solutions to overcome"
+
+// Inform the model that on completion of changes please provide a full Completion Status Report for each story in the format below in this format
+
+"## Sprint Completion Status Report:
+✅ [Story Number]: [Story Title]
+❌ [Story Number]: [Story Title]"
+
+//Update the status of the story appropriately with ✅ or ❌
