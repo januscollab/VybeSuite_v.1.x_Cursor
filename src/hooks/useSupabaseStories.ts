@@ -362,12 +362,16 @@ export const useSupabaseStories = () => {
   }, []);
 
   // Close sprint (archive all stories)
-  const closeSprint = useCallback(async (sprintId: string) => {
+  const closeSprint = useCallback(async (sprintId: string, type: 'completed' | 'all') => {
     const operationId = `close-sprint-${sprintId}`;
     setOperationLoading(prev => ({ ...prev, [operationId]: true }));
 
     try {
-      await archiveAllStoriesInSprint(sprintId);
+      if (type === 'completed') {
+        await archiveCompletedStories(sprintId);
+      } else {
+        await archiveAllStoriesInSprint(sprintId);
+      }
       await loadData(); // Refresh data
     } catch (err) {
       console.error('Error closing sprint:', err);
@@ -378,7 +382,7 @@ export const useSupabaseStories = () => {
         return rest;
       });
     }
-  }, [archiveAllStoriesInSprint, loadData]);
+  }, [archiveAllStoriesInSprint, archiveCompletedStories, loadData]);
 
   // Get sprint statistics
   const getSprintStats = useCallback((sprintId: string): SprintStats => {
