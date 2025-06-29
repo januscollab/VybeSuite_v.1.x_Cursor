@@ -25,9 +25,19 @@ Return a JSON response with exactly this structure:
   "tags": ["tag1", "tag2", "tag3"]
 }
 
+## CRITICAL: Description Field Requirements
+The "description" field must contain ONLY plain text. Do NOT include:
+- JSON objects or arrays
+- Markdown formatting
+- Code blocks
+- Nested structures
+- Any special formatting
+
+The description should be a single, well-formatted paragraph or simple bullet points using plain text only.
+
 ## Requirements:
 - **Title**: Must follow proper Agile user story format ("As a [user type], I want [goal] so that [benefit]")
-- **Description**: Include:
+- **Description**: Include as PLAIN TEXT ONLY:
   - Detailed acceptance criteria
   - Technical implementation guidance informed by codebase review
   - Integration points with existing systems
@@ -58,5 +68,8 @@ Balance technical feasibility with business value by:
 - Evaluating development effort against business outcomes
 - Ensuring the story fits within broader product roadmap
 - Addressing potential technical debt or system improvements
+
+## IMPORTANT: Output Format
+Ensure the description field contains only readable plain text without any JSON formatting, code blocks, or structured markup. Write it as you would explain the requirements to a team member in a clear, conversational manner.
 
 Generate the user story based on the given prompt while incorporating insights from your codebase review.
