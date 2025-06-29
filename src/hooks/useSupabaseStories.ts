@@ -13,7 +13,7 @@ export const useSupabaseStories = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [operationLoading, setOperationLoading] = useState<Record<string, boolean>>({});
 
-  const { archiveSprint, archiveCompletedStories } = useArchive();
+  const { archiveAllStoriesInSprint, archiveCompletedStories } = useArchive();
 
   // Set operation loading state
   const setOperationLoadingState = useCallback((operation: string, loading: boolean) => {
@@ -753,8 +753,8 @@ export const useSupabaseStories = () => {
         // Archive only completed stories
         await archiveCompletedStories(sprintId);
       } else {
-        // Archive the entire sprint and all its stories
-        await archiveSprint(sprintId, true);
+        // Archive all stories in the sprint (but NOT the sprint itself)
+        await archiveAllStoriesInSprint(sprintId);
       }
       
       // Reload data to reflect changes
@@ -765,7 +765,7 @@ export const useSupabaseStories = () => {
     } finally {
       setOperationLoadingState(operationId, false);
     }
-  }, [archiveSprint, archiveCompletedStories, loadData, setOperationLoadingState]);
+  }, [archiveAllStoriesInSprint, archiveCompletedStories, loadData, setOperationLoadingState]);
 
   // Initialize on mount
   useEffect(() => {

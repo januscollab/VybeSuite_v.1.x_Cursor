@@ -7,42 +7,29 @@ export const useArchive = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Archive a sprint and optionally its stories
-  const archiveSprint = useCallback(async (sprintId: string, archiveStories: boolean = false) => {
+  const archiveAllStoriesInSprint = useCallback(async (sprintId: string) => {
     try {
       setLoading(true);
       setError(null);
 
       const now = new Date().toISOString();
 
-      // Archive the sprint
-      const { error: sprintError } = await supabase
-        .from('sprints')
+      // Archive all stories in the sprint (but NOT the sprint itself)
+      const { error: storiesError } = await supabase
+        .from('stories')
         .update({ 
           archived_at: now,
           updated_at: now 
         })
-        .eq('id', sprintId);
+        .eq('sprint_id', sprintId)
+        .is('archived_at', null);
 
-      if (sprintError) throw sprintError;
-
-      // Optionally archive all stories in the sprint
-      if (archiveStories) {
-        const { error: storiesError } = await supabase
-          .from('stories')
-          .update({ 
-            archived_at: now,
-            updated_at: now 
-          })
-          .eq('sprint_id', sprintId)
-          .is('archived_at', null);
-
-        if (storiesError) throw storiesError;
-      }
+      if (storiesError) throw storiesError;
 
       return true;
     } catch (err) {
-      console.error('Error archiving sprint:', err);
-      setError(err instanceof Error ? err.message : 'Failed to archive sprint');
+      console.error('Error archiving stories in sprint:', err);
+      setError(err instanceof Error ? err.message : 'Failed to archive stories in sprint');
       return false;
     } finally {
       setLoading(false);
@@ -258,7 +245,7 @@ export const useArchive = () => {
   return {
     loading,
     error,
-    archiveSprint,
+    archiveAllStoriesInSprint,
     archiveCompletedStories,
     archiveStories,
     restoreSprint,
