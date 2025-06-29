@@ -5,6 +5,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { useArchive } from './useArchive';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
+// Cache management constants
+const CACHE_KEY = 'sprint-board-cache';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const SYNC_THRESHOLD = 5 * 60 * 1000; // 5 minutes
+
 export const useSupabaseStories = () => {
   const { user } = useAuth();
   const [sprints, setSprints] = useState<Sprint[]>([]);
@@ -23,6 +28,44 @@ export const useSupabaseStories = () => {
     }));
   }, []);
 
+  // Cache management functions
+  const loadFromCache = useCallback(() => {
+    if (!user) return false;
+    
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { sprints: cachedSprints, timestamp, userId } = JSON.parse(cached);
+        
+        // Verify cache is for current user and not expired
+        if (userId === user.id && Date.now() - timestamp < CACHE_DURATION) {
+          setSprints(cachedSprints);
+          setLoading(false);
+          console.log('⚡ Loaded from cache instantly');
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('Cache load failed:', error);
+      localStorage.removeItem(CACHE_KEY);
+    }
+    return false;
+  }, [user]);
+
+  const saveToCache = useCallback((sprintsData: Sprint[]) => {
+    if (!user || sprintsData.length === 0) return;
+    
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        sprints: sprintsData,
+        timestamp: Date.now(),
+        userId: user.id
+      }));
+    } catch (error) {
+      console.error('Cache save failed:', error);
+    }
+  }, [user]);
+
   // Initialize data - create default sprints if they don't exist
   const initializeData = useCallback(async () => {
     if (!user) {
@@ -32,6 +75,9 @@ export const useSupabaseStories = () => {
     }
 
     try {
+      // Try to load from cache first for instant UI
+      const cacheLoaded = loadFromCache();
+      
       setLoading(true);
       setError(null);
 
@@ -78,13 +124,20 @@ export const useSupabaseStories = () => {
       // Load all data
       await loadData();
       setIsInitialized(true);
+      
+      // If we didn't load from cache, we're done loading now
+      if (!cacheLoaded) {
+        setLoading(false);
+      }
     } catch (err) {
       console.error('Error initializing data:', err);
       setError(err instanceof Error ? err.message : 'Failed to initialize data');
     } finally {
-      setLoading(false);
+      if (!loadFromCache()) {
+        setLoading(false);
+      }
     }
-  }, [user]);
+  }, [user, loadFromCache, loadData]);
 
   // Load sprints and stories from Supabase
   const loadData = useCallback(async () => {
@@ -138,11 +191,12 @@ export const useSupabaseStories = () => {
       }));
 
       setSprints(transformedSprints);
+      saveToCache(transformedSprints);
     } catch (err) {
       console.error('Error loading data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load data');
     }
-  }, [user]);
+  }, [user, saveToCache]);
 
   // Enhanced real-time sprint change handler
   const handleSprintChange = useCallback((payload: RealtimePostgresChangesPayload<any>) => {
@@ -175,6 +229,8 @@ export const useSupabaseStories = () => {
               const bPos = b.id === 'priority' ? 0 : b.id === 'development' ? 1 : 2;
               return aPos - bPos;
             });
+            saveToCache(updated);
+            return updated;
           });
         }
         break;
@@ -303,6 +359,7 @@ export const useSupabaseStories = () => {
               );
             }
             
+            saveToCache(updated);
             return updated;
           });
         }
@@ -317,7 +374,7 @@ export const useSupabaseStories = () => {
         }
         break;
     }
-  }, []);
+  }, [saveToCache]);
 
   // Set up real-time subscriptions
   useEffect(() => {
@@ -339,7 +396,11 @@ export const useSupabaseStories = () => {
         handleSprintChange
       )
       .subscribe((status) => {
-        console.log('Sprint subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Sprint subscription active');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Sprint subscription error');
+        }
       });
 
     // Subscribe to story changes
@@ -355,7 +416,11 @@ export const useSupabaseStories = () => {
         handleStoryChange
       )
       .subscribe((status) => {
-        console.log('Story subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Story subscription active');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Story subscription error');
+        }
       });
 
     // Cleanup subscriptions on unmount
@@ -365,6 +430,66 @@ export const useSupabaseStories = () => {
       supabase.removeChannel(storyChannel);
     };
   }, [isInitialized, user?.id, handleSprintChange, handleStoryChange]);
+
+  // Smart page visibility handling
+  useEffect(() => {
+    if (!user) return;
+
+    let isTabActive = true;
+    let lastSyncTime = Date.now();
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        isTabActive = false;
+      } else {
+        isTabActive = true;
+        const now = Date.now();
+        
+        // Only sync if tab was inactive for more than sync threshold
+        if (now - lastSyncTime > SYNC_THRESHOLD) {
+          console.log('🔄 Syncing after extended tab inactivity');
+          loadData();
+          lastSyncTime = now;
+        }
+      }
+    };
+
+    const handleFocus = () => {
+      if (!isTabActive) {
+        isTabActive = true;
+        const now = Date.now();
+        
+        // Only sync if there might be changes (after extended inactivity)
+        if (now - lastSyncTime > SYNC_THRESHOLD) {
+          console.log('🔄 Syncing after extended inactivity');
+          loadData();
+          lastSyncTime = now;
+        }
+      }
+    };
+
+    const handleBlur = () => {
+      isTabActive = false;
+    };
+
+    // Use visibility API for better detection
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [user, loadData]);
+
+  // Cache sprints whenever they change
+  useEffect(() => {
+    if (sprints.length > 0 && user) {
+      saveToCache(sprints);
+    }
+  }, [sprints, user, saveToCache]);
 
   // Generate next story number
   const generateStoryNumber = useCallback(async () => {
@@ -775,6 +900,22 @@ export const useSupabaseStories = () => {
 
       const now = new Date().toISOString();
 
+      // 1. ✅ OPTIMISTIC UPDATE: Update UI immediately
+      setSprints(prev => prev.map(sprint => ({
+        ...sprint,
+        stories: sprint.stories.map(story => 
+          story.id === storyId 
+            ? { 
+                ...story, 
+                completed: newCompletedState, 
+                completedAt: newCompletedState ? now : null,
+                updatedAt: now
+              }
+            : story
+        )
+      })));
+
+      // 2. ✅ DATABASE UPDATE: Sync with database
       // Re-index source sprint stories (if different from destination)
       if (sourceSprintId !== destinationSprintId) {
         sourceSprintStories.forEach((story, index) => {
@@ -819,11 +960,26 @@ export const useSupabaseStories = () => {
       const results = await Promise.all(updatePromises);
       
       // Check for any errors in the batch update
-      const errors = results.filter(result => result.error);
+          completed_at: newCompletedState ? now : null,
+          updated_at: now
       if (errors.length > 0) {
         throw new Error(`Failed to update ${errors.length} stories: ${errors[0].error?.message}`);
       }
 
+        // 3. ✅ ROLLBACK: Revert optimistic update on failure
+        setSprints(prev => prev.map(sprint => ({
+          ...sprint,
+          stories: sprint.stories.map(story => 
+            story.id === storyId 
+              ? { 
+                  ...story, 
+                  completed: currentStory!.completed, 
+                  completedAt: currentStory!.completedAt,
+                  updatedAt: currentStory!.updatedAt
+                }
+              : story
+          )
+        })));
       console.log('Story moved successfully');
     } catch (err) {
       console.error('Error moving story:', err);
@@ -831,20 +987,10 @@ export const useSupabaseStories = () => {
     } finally {
       setOperationLoadingState(operationId, false);
     }
-  }, [user, setOperationLoadingState]);
-
-  // Calculate sprint statistics
-  const getSprintStats = useCallback((sprintId: string): SprintStats => {
-    const sprint = sprints.find(s => s.id === sprintId);
-    if (!sprint) return { todo: 0, inProgress: 0, done: 0 };
-
-    const completed = sprint.stories.filter(s => s.completed).length;
-    const total = sprint.stories.length;
-    
     return {
       todo: total - completed,
       inProgress: 0, // Will be dynamic in later sprints
-      done: completed
+  }, [sprints, setOperationLoadingState]);
     };
   }, [sprints]);
 
@@ -853,7 +999,46 @@ export const useSupabaseStories = () => {
     const operationId = `close-sprint-${sprintId}`;
     setOperationLoadingState(operationId, true);
 
+    // Store original state for rollback
+    let originalStory: Story | null = null;
+    let originalSprintId: string | null = null;
+
     try {
+      // 1. ✅ OPTIMISTIC UPDATE: Update UI immediately
+      setSprints(prevSprints => {
+        const newSprints = prevSprints.map(sprint => {
+          // Find and remove the story from its current sprint
+          const storyIndex = sprint.stories.findIndex(s => s.id === storyId);
+          if (storyIndex !== -1) {
+            originalStory = sprint.stories[storyIndex];
+            originalSprintId = sprint.id;
+            return {
+              ...sprint,
+              stories: sprint.stories.filter(s => s.id !== storyId)
+            };
+          }
+          return sprint;
+        });
+
+        // Add story to destination sprint at correct position
+        if (originalStory) {
+          return newSprints.map(sprint => {
+            if (sprint.id === destinationSprintId) {
+              const newStories = [...sprint.stories];
+              newStories.splice(newPosition, 0, { 
+                ...originalStory, 
+                sprintId: destinationSprintId,
+                updatedAt: new Date().toISOString()
+              });
+              return { ...sprint, stories: newStories };
+            }
+            return sprint;
+          });
+        }
+        return newSprints;
+      });
+
+      // 2. ✅ DATABASE UPDATE: Sync with database
       if (type === 'completed') {
         // Archive only completed stories
         await archiveCompletedStories(sprintId);
@@ -863,9 +1048,36 @@ export const useSupabaseStories = () => {
       }
       
       // Reload data to reflect changes
-      await loadData();
+      console.log('Story moved successfully:', storyId, 'to sprint:', destinationSprintId);
     } catch (err) {
       console.error('Error closing sprint:', err);
+      
+      // 3. ✅ ROLLBACK: Revert optimistic update on failure
+      if (originalStory && originalSprintId) {
+        setSprints(prevSprints => {
+          const revertedSprints = prevSprints.map(sprint => {
+            // Remove from destination sprint
+            if (sprint.id === destinationSprintId) {
+              return {
+                ...sprint,
+                stories: sprint.stories.filter(s => s.id !== storyId)
+              };
+            }
+            // Add back to source sprint
+            if (sprint.id === originalSprintId) {
+              return {
+                ...sprint,
+                stories: [...sprint.stories, originalStory].sort((a, b) => 
+                  a.number.localeCompare(b.number)
+                )
+              };
+            }
+            return sprint;
+          });
+          return revertedSprints;
+        });
+      }
+      
       setError(err instanceof Error ? err.message : 'Failed to close sprint');
     } finally {
       setOperationLoadingState(operationId, false);
