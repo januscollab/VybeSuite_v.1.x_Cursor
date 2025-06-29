@@ -72,7 +72,12 @@ export const useSupabaseStories = () => {
       setIsInitialized(true);
     } catch (err) {
       console.error('Error loading data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      // Check for network/configuration errors
+      if (err instanceof TypeError && err.message === 'Failed to fetch') {
+        setError('Missing Supabase configuration or network error. Please check your Supabase URL and API key.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to load data');
+      }
     } finally {
       setLoading(false);
     }
