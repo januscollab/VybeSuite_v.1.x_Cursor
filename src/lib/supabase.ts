@@ -89,32 +89,6 @@ export interface Database {
           completed_at: string | null;
         };
         Insert: {
-      user_settings: {
-        Row: {
-          id: string;
-          user_id: string;
-          story_number_prefix: string;
-          preferred_homepage: string;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          story_number_prefix?: string;
-          preferred_homepage?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          story_number_prefix?: string;
-          preferred_homepage?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
           id?: string;
           number: string;
           title: string;
@@ -143,6 +117,32 @@ export interface Database {
           updated_at?: string;
           archived_at?: string | null;
           completed_at?: string | null;
+        };
+      };
+      user_settings: {
+        Row: {
+          id: string;
+          user_id: string;
+          story_number_prefix: string;
+          preferred_homepage: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          story_number_prefix?: string;
+          preferred_homepage?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          story_number_prefix?: string;
+          preferred_homepage?: string;
+          created_at?: string;
+          updated_at?: string;
         };
       };
     };
