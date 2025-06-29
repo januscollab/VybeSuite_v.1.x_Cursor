@@ -121,7 +121,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
             )}
             {isBacklogSprint && (
               <span className="px-2 py-0.5 bg-devsuite-secondary text-text-inverse text-xs font-medium rounded-full">
-                BACKLOG
+                FUTURE ENHANCEMENTS
               </span>
             )}
             {/* Width indicator for development/debugging */}

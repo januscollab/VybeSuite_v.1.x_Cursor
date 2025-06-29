@@ -211,31 +211,56 @@ export const useSupabaseStories = () => {
   }, [user]);
 
   // Add a new sprint
-  const addSprint = useCallback(async (sprintData: { title: string; description?: string; icon?: string }) => {
+  const addSprint = useCallback(async (title: string, icon: string, description: string, isBacklog: boolean, isDraggable: boolean) => {
     if (!user) return;
 
     const operationId = `add-sprint-${Date.now()}`;
     setOperationLoading(prev => ({ ...prev, [operationId]: true }));
 
     try {
-      // Get next position
-      const { data: lastSprint } = await supabase
+      // Get all sprints to determine correct positioning
+      const { data: allSprints } = await supabase
         .from('sprints')
-        .select('position')
+        .select('id, position, is_backlog')
         .eq('user_id', user.id)
         .is('archived_at', null)
-        .order('position', { ascending: false })
-        .limit(1);
+        .order('position', { ascending: false });
 
-      const nextPosition = (lastSprint?.[0]?.position || 0) + 1;
+      let nextPosition: number;
+      
+      if (isBacklog) {
+        // Backlog sprint should always be last
+        nextPosition = (allSprints?.[0]?.position || 0) + 1;
+      } else {
+        // Find the backlog sprint position
+        const backlogSprint = allSprints?.find(sprint => sprint.is_backlog);
+        
+        if (backlogSprint) {
+          // Insert new sprint before the backlog
+          nextPosition = backlogSprint.position;
+          
+          // Update backlog position to be after the new sprint
+          const { error: updateError } = await supabase
+            .from('sprints')
+            .update({ position: nextPosition + 1 })
+            .eq('id', backlogSprint.id);
+            
+          if (updateError) throw updateError;
+        } else {
+          // No backlog sprint exists, use next available position
+          nextPosition = (allSprints?.[0]?.position || 0) + 1;
+        }
+      }
 
       const { data, error } = await supabase
         .from('sprints')
         .insert({
           id: `sprint-${Date.now()}`,
-          title: sprintData.title,
-          description: sprintData.description || '',
-          icon: sprintData.icon || '📋',
+          title,
+          description: description || '',
+          icon: icon || '📋',
+          is_backlog: isBacklog,
+          is_draggable: isDraggable,
           user_id: user.id,
           position: nextPosition
         })
@@ -244,8 +269,8 @@ export const useSupabaseStories = () => {
 
       if (error) throw error;
 
-      // Update local state
-      setSprints(prev => [...prev, { ...data, stories: [] }]);
+      // Reload data to get correct ordering
+      await loadData();
     } catch (err) {
       console.error('Error adding sprint:', err);
       setError(err instanceof Error ? err.message : 'Failed to add sprint');
@@ -255,27 +280,67 @@ export const useSupabaseStories = () => {
         return rest;
       });
     }
-  }, [user]);
+  }, [user, loadData]);
 
   // Move sprint position
   const moveSprint = useCallback(async (sprintId: string, newPosition: number) => {
+    if (!user) return;
+    
+    // Prevent moving backlog sprint or priority sprint
+    const sprint = sprints.find(s => s.id === sprintId);
+    if (!sprint || sprint.isBacklog || sprintId === 'priority') {
+      console.warn('Cannot move system sprints (Priority or Backlog)');
+      return;
+    }
+
     const operationId = `move-sprint-${sprintId}`;
     setOperationLoading(prev => ({ ...prev, [operationId]: true }));
 
     try {
-      const { error } = await supabase
+      // Get all user sprints (excluding priority and backlog)
+      const { data: userSprints, error: fetchError } = await supabase
         .from('sprints')
-        .update({ position: newPosition })
-        .eq('id', sprintId);
+        .select('*')
+        .eq('user_id', user.id)
+        .is('archived_at', null)
+        .neq('id', 'priority')
+        .eq('is_backlog', false)
+        .order('position');
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
+      if (!userSprints) throw new Error('Failed to fetch user sprints');
 
-      // Update local state
-      setSprints(prev => prev.map(sprint => 
-        sprint.id === sprintId 
-          ? { ...sprint, position: newPosition }
-          : sprint
-      ).sort((a, b) => (a.position || 0) - (b.position || 0)));
+      // Find the sprint being moved
+      const movedSprint = userSprints.find(s => s.id === sprintId);
+      if (!movedSprint) throw new Error('Sprint not found or not moveable');
+
+      // Remove the moved sprint from the array
+      const otherSprints = userSprints.filter(s => s.id !== sprintId);
+
+      // Insert the moved sprint at the new position
+      otherSprints.splice(newPosition, 0, movedSprint);
+
+      // Update positions for all user sprints (starting from position 1, after priority)
+      const updatePromises = otherSprints.map((sprint, index) => 
+        supabase
+          .from('sprints')
+          .update({
+            position: index + 1, // Start from position 1 (priority is always 0)
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', sprint.id)
+      );
+
+      const results = await Promise.all(updatePromises);
+      
+      // Check for any errors in the batch update
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        throw new Error(`Failed to update ${errors.length} sprints: ${errors[0].error?.message}`);
+      }
+
+      // Reload data to get correct ordering
+      await loadData();
     } catch (err) {
       console.error('Error moving sprint:', err);
       setError(err instanceof Error ? err.message : 'Failed to move sprint');
@@ -285,7 +350,7 @@ export const useSupabaseStories = () => {
         return rest;
       });
     }
-  }, []);
+  }, [user, sprints, loadData]);
 
   // Delete sprint
   const deleteSprint = useCallback(async (sprintId: string) => {
@@ -377,10 +442,6 @@ export const useSupabaseStories = () => {
           .limit(1);
 
         position = (lastStoryInSprint?.[0]?.position || 0) + 1;
-      }
-
-      if (!data) {
-        throw new Error('No data returned from insert operation');
       }
 
       const { error } = await supabase
