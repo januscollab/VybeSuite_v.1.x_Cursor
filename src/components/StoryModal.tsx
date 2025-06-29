@@ -3,6 +3,7 @@ import { X, Sparkles, AlertCircle, Plus, Star, Trash2, Save } from 'lucide-react
 import { AddStoryFormData, AISettings, Story } from '../types';
 import { generateStory, AIServiceError } from '../utils/aiService';
 import { AI_PROVIDERS } from '../constants/ai';
+import { usePrompts } from '../contexts/PromptContext';
 
 interface StoryModalProps {
   isOpen: boolean;
@@ -42,6 +43,8 @@ export const StoryModal: React.FC<StoryModalProps> = ({
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<'openai' | 'anthropic'>(aiSettings.defaultProvider);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+
+  const { getStoryGenerationPrompt } = usePrompts();
 
   // Reset form when modal opens/closes or story changes
   useEffect(() => {
@@ -154,11 +157,14 @@ export const StoryModal: React.FC<StoryModalProps> = ({
     setGenerationError(null);
     
     try {
+      const systemPrompt = getStoryGenerationPrompt(selectedProvider);
+      
       const result = await generateStory({
         provider: selectedProvider,
         model,
         prompt: storyPrompt,
-        apiKey
+        apiKey,
+        systemPrompt
       });
       
       setFormData(prev => ({

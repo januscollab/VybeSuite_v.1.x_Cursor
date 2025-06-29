@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
+import { PromptProvider } from './contexts/PromptContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Header } from './components/Header';
 import { DragDropSprintBoard } from './components/DragDropSprintBoard';
@@ -19,7 +20,9 @@ import { AlertTriangle, Database } from 'lucide-react';
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <PromptProvider>
+        <AppContent />
+      </PromptProvider>
     </AuthProvider>
   );
 }
