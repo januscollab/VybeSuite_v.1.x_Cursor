@@ -119,7 +119,9 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
           {/* Date Range */}
           <div>
             <label className="block text-sm font-medium text-text-primary mb-2">
-              Date Range
+              Date Range {!filters.dateRange.start && !filters.dateRange.end && (
+                <span className="text-xs text-devsuite-primary font-normal">(All Time)</span>
+              )}
             </label>
             <div className="flex gap-2">
               <input
@@ -141,6 +143,12 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
                 className="flex-1 px-3 py-3 border border-border-default rounded-lg bg-bg-primary text-text-primary focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
               />
             </div>
+            {!filters.dateRange.start && !filters.dateRange.end && (
+              <div className="text-xs text-text-tertiary mt-1 flex items-center gap-1">
+                <span>🌐</span>
+                <span>Searching all available records</span>
+              </div>
+            )}
           </div>
 
           {/* Tags Filter */}

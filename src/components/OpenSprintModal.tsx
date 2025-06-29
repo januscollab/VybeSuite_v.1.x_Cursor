@@ -69,6 +69,8 @@ export const OpenSprintModal: React.FC<OpenSprintModalProps> = ({
       await navigator.clipboard.writeText(prompt);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      // Auto-close modal after successful copy
+      onClose();
     } catch (err) {
       console.error('Failed to copy to clipboard:', err);
       // Fallback for older browsers
@@ -80,6 +82,8 @@ export const OpenSprintModal: React.FC<OpenSprintModalProps> = ({
       document.body.removeChild(textArea);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      // Auto-close modal after successful copy
+      onClose();
     }
   };
 

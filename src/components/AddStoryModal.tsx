@@ -313,6 +313,41 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
               </div>
             </div>
 
+            {/* Tags */}
+            <div className="mb-3">
+              <label htmlFor="tags" className="block font-semibold text-[13px] mb-1 text-text-primary">
+                Tags
+              </label>
+              <div className="border-2 border-border-default rounded-lg bg-bg-primary p-1.5 min-h-[40px] flex flex-wrap gap-1.5 items-start transition-all focus-within:border-devsuite-primary focus-within:shadow-[0_0_0_3px_rgba(252,128,25,0.1)]">
+                {formData.tags.map((tag) => (
+                  <div
+                    key={tag}
+                    className="bg-devsuite-primary-subtle text-devsuite-primary px-2 py-1 rounded-2xl text-xs font-medium flex items-center gap-1"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="bg-transparent border-none text-devsuite-primary cursor-pointer p-0 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[10px] leading-none hover:bg-devsuite-primary hover:text-white"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleTagInput}
+                  placeholder="Add tags (press Enter to add)..."
+                  className="border-none outline-none bg-transparent flex-1 min-w-[100px] p-1.5 text-[13px] text-text-primary placeholder-text-placeholder"
+                />
+              </div>
+              <div className="text-[11px] text-text-tertiary mt-0.5">
+                Add relevant tags like frontend, backend, ui, api, etc.
+              </div>
+            </div>
+
             {/* Priority and Risk Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               {/* Priority */}
@@ -361,41 +396,6 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
                     <polyline points="6,9 12,15 18,9"></polyline>
                   </svg>
                 </div>
-              </div>
-            </div>
-
-            {/* Tags */}
-            <div className="mb-3">
-              <label htmlFor="tags" className="block font-semibold text-[13px] mb-1 text-text-primary">
-                Tags
-              </label>
-              <div className="border-2 border-border-default rounded-lg bg-bg-primary p-1.5 min-h-[40px] flex flex-wrap gap-1.5 items-start transition-all focus-within:border-devsuite-primary focus-within:shadow-[0_0_0_3px_rgba(252,128,25,0.1)]">
-                {formData.tags.map((tag) => (
-                  <div
-                    key={tag}
-                    className="bg-devsuite-primary-subtle text-devsuite-primary px-2 py-1 rounded-2xl text-xs font-medium flex items-center gap-1"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="bg-transparent border-none text-devsuite-primary cursor-pointer p-0 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[10px] leading-none hover:bg-devsuite-primary hover:text-white"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={handleTagInput}
-                  placeholder="Add tags (press Enter to add)..."
-                  className="border-none outline-none bg-transparent flex-1 min-w-[100px] p-1.5 text-[13px] text-text-primary placeholder-text-placeholder"
-                />
-              </div>
-              <div className="text-[11px] text-text-tertiary mt-0.5">
-                Add relevant tags like frontend, backend, ui, api, etc.
               </div>
             </div>
           </form>
