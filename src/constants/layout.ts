@@ -45,8 +45,10 @@ export const SPRINT_LAYOUT_RULES = {
   BACKLOG_SPRINT: {
     WIDTH: '100%', // ONLY sprint that can be full width
     IS_DRAGGABLE: false,
-    IS_DELETABLE: false,
+    IS_DELETABLE: false,  // NEVER deletable
     POSITION: 'last', // Always rendered last
+    STORY_LAYOUT: '2-column', // ALWAYS two columns of stories
+    COLOR_SCHEME: 'priority', // Same color as Priority Sprint
   },
 } as const;
 

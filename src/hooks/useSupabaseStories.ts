@@ -22,6 +22,61 @@ export const useSupabaseStories = () => {
 
   const { archiveAllStoriesInSprint, archiveCompletedStories } = useArchive();
 
+  // Ensure backlog sprint exists for the user
+  const ensureBacklogSprintExists = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      // Check if backlog sprint already exists
+      const { data: existingBacklog, error: checkError } = await supabase
+        .from('sprints')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_backlog', true)
+        .is('archived_at', null)
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      // If backlog doesn't exist, create it
+      if (!existingBacklog || existingBacklog.length === 0) {
+        // Get the highest position to place backlog at the end
+        const { data: allSprints } = await supabase
+          .from('sprints')
+          .select('position')
+          .eq('user_id', user.id)
+          .is('archived_at', null)
+          .order('position', { ascending: false })
+          .limit(1);
+
+        const nextPosition = (allSprints?.[0]?.position || 0) + 1;
+
+        const { error: createError } = await supabase
+          .from('sprints')
+          .insert({
+            id: `backlog-${user.id}`,
+            title: 'Backlog - Future Enhancements',
+            description: 'Future enhancements and feature ideas',
+            icon: '📋',
+            is_backlog: true,
+            is_draggable: false,
+            user_id: user.id,
+            position: nextPosition
+          });
+
+        if (createError) {
+          console.error('Error creating backlog sprint:', createError);
+          // Don't throw here as this is not critical for app functionality
+        } else {
+          console.log('Backlog sprint created successfully');
+        }
+      }
+    } catch (err) {
+      console.error('Error ensuring backlog sprint exists:', err);
+      // Don't throw here as this is not critical for app functionality
+    }
+  }, [user]);
+
   // Load data from Supabase
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -29,6 +84,9 @@ export const useSupabaseStories = () => {
     try {
       setLoading(true);
       setError(null);
+
+      // Ensure backlog sprint exists for this user
+      await ensureBacklogSprintExists();
 
       // Fetch sprints
       const { data: sprintsData, error: sprintsError } = await supabase
@@ -83,7 +141,7 @@ export const useSupabaseStories = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, ensureBacklogSprintExists]);
 
   // Add a new story
   const addStory = useCallback(async (sprintId: string, storyData: { title: string; description?: string; tags?: string[] }) => {
@@ -304,6 +362,13 @@ export const useSupabaseStories = () => {
   const addSprint = useCallback(async (title: string, icon: string, description: string, isBacklog: boolean, isDraggable: boolean) => {
     if (!user) return;
 
+    // Prevent creating additional backlog sprints
+    if (isBacklog) {
+      console.warn('Cannot create additional backlog sprints - one already exists');
+      setError('Only one backlog sprint is allowed per user');
+      return;
+    }
+
     const operationId = `add-sprint-${Date.now()}`;
     setOperationLoading(prev => ({ ...prev, [operationId]: true }));
 
@@ -444,6 +509,14 @@ export const useSupabaseStories = () => {
 
   // Delete sprint
   const deleteSprint = useCallback(async (sprintId: string) => {
+    // Prevent deletion of backlog sprint
+    const sprint = sprints.find(s => s.id === sprintId);
+    if (sprint?.isBacklog) {
+      console.warn('Cannot delete backlog sprint');
+      setError('Backlog sprint cannot be deleted');
+      return;
+    }
+
     const operationId = `delete-sprint-${sprintId}`;
     setOperationLoading(prev => ({ ...prev, [operationId]: true }));
 
@@ -466,7 +539,7 @@ export const useSupabaseStories = () => {
         return rest;
       });
     }
-  }, []);
+  }, [sprints]);
 
   // Toggle story completion
   const toggleStory = useCallback(async (storyId: string) => {
@@ -613,6 +686,7 @@ export const useSupabaseStories = () => {
   // Load data on mount and user change
   useEffect(() => {
     if (user && !isInitialized) {
+      // Ensure backlog exists before loading data
       loadData();
     }
   }, [user, isInitialized, loadData]);

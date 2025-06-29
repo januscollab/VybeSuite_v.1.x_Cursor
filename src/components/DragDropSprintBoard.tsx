@@ -185,9 +185,14 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
         )}
 
         {/* 
-          FUTURE ENHANCEMENTS SPRINT (BACKLOG) - FULL WIDTH WITH TWO-COLUMN STORIES
+          BACKLOG - FUTURE ENHANCEMENTS SPRINT - FULL WIDTH WITH TWO-COLUMN STORIES
           This sprint is always positioned last and uses the full page width
           Stories are displayed in a two-column layout for better visibility
+          CRITICAL REQUIREMENTS:
+          - ALWAYS 100% page width
+          - ALWAYS two columns of stories
+          - ALWAYS same color as Priority Sprint (devsuite-primary styling)
+          - NEVER draggable or deletable
         */}
         {backlogSprint && (
           <div className="w-full">
@@ -199,10 +204,11 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
               stats={getSprintStats(backlogSprint.id)}
               isBacklog={true}  // Explicitly set to true for backlog sprint
               operationLoading={operationLoading}
+              isDraggable={false}  // Explicitly prevent dragging
               onAddStory={() => onAddStory(backlogSprint.id)}
               onOpenSprint={() => onOpenSprint(backlogSprint.id)}
               onCloseSprint={(type) => onCloseSprint(backlogSprint.id, type)}
-              onDeleteSprint={() => onDeleteSprint(backlogSprint.id)}
+              onDeleteSprint={undefined}  // Prevent deletion by not providing handler
               onToggleStory={onToggleStory}
               onEditStory={onEditStory}
             />

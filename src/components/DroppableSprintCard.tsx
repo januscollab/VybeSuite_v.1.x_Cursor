@@ -91,14 +91,14 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
   const layoutRules = validateSprintLayout({ id, isBacklog });
   const isPrioritySprint = id === 'priority';
   const isBacklogSprint = isBacklog;
-  const isUserGeneratedSprint = layoutRules.isDeletable;
+  const isUserGeneratedSprint = layoutRules.isDeletable && !isBacklogSprint; // Backlog is never deletable
 
   return (
     <div className={`bg-bg-primary border rounded-xl p-6 shadow-devsuite transition-all hover:shadow-devsuite-hover hover:border-border-strong relative ${
       isPrioritySprint 
         ? 'border-devsuite-primary border-2 bg-gradient-to-br from-bg-primary to-devsuite-primary-subtle' 
         : isBacklogSprint
-        ? 'border-devsuite-primary border-2 bg-gradient-to-br from-bg-primary to-devsuite-primary-subtle'
+        ? 'border-devsuite-primary border-2 bg-gradient-to-br from-bg-primary to-devsuite-primary-subtle'  // Same styling as Priority Sprint
         : 'border-border-default'
     }`}>
       {/* Close Button for Priority Sprint */}
@@ -222,7 +222,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
       </div>
 
       {/* Delete Button - Bottom Left for User-Generated Sprints Only (not backlog or priority) */}
-      {isUserGeneratedSprint && !isBacklogSprint && !isPrioritySprint && (
+      {isUserGeneratedSprint && (
         <button
           onClick={handleDeleteSprint}
           disabled={isDeleteLoading || stories.length > 0}
@@ -243,7 +243,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
               snapshot.isDraggingOver 
                 ? 'bg-devsuite-primary-subtle border-2 border-dashed border-devsuite-primary rounded-lg p-2' 
                 : ''
-            } ${isBacklog ? 'grid grid-cols-1 lg:grid-cols-2 gap-2' : 'space-y-2'}`}
+            } ${isBacklog ? 'grid grid-cols-1 lg:grid-cols-2 gap-2' : 'space-y-2'}`}  // Two-column layout for backlog
           >
             {stories.map((story, index) => (
               <DraggableStory
@@ -261,9 +261,9 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
             {stories.length === 0 && (
               <div className="flex items-center justify-center py-8 text-text-quaternary">
                 <div className="text-center">
-                  <div className="text-2xl mb-2">📝</div>
-                  <p className="text-sm">No stories yet</p>
-                  <p className="text-xs">Drag stories here or click "Add Story"</p>
+                  <div className="text-2xl mb-2">{isBacklogSprint ? '💡' : '📝'}</div>
+                  <p className="text-sm">{isBacklogSprint ? 'No future enhancements yet' : 'No stories yet'}</p>
+                  <p className="text-xs">{isBacklogSprint ? 'Add ideas for future development' : 'Drag stories here or click "Add Story"'}</p>
                 </div>
               </div>
             )}
