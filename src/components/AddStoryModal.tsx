@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, AlertCircle, Plus } from 'lucide-react';
+import { X, Sparkles, AlertCircle, Plus, Star } from 'lucide-react';
 import { AddStoryFormData, AISettings } from '../types';
 import { generateStory, AIServiceError } from '../utils/aiService';
 import { AI_PROVIDERS } from '../constants/ai';
@@ -153,6 +153,21 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
     return apiKey && apiKey.trim().length > 0;
   };
 
+  // Robot Running Animation Component
+  const RobotRunner = ({ message = "Generating story..." }) => (
+    <div className="robot-container">
+      <div className="robot-runner">
+        <div className="robot-head-run"></div>
+        <div className="robot-body"></div>
+        <div className="robot-leg left"></div>
+        <div className="robot-leg right"></div>
+        <div className="robot-arm left"></div>
+        <div className="robot-arm right"></div>
+      </div>
+      <div className="robot-message">{message}</div>
+    </div>
+  );
+
   if (!isOpen) return null;
 
   return (
@@ -250,10 +265,18 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
                     type="button"
                     onClick={handleGenerateStory}
                     disabled={isGenerating || !hasValidApiKey(selectedProvider)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 bg-transparent text-devsuite-primary text-xs font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all hover:bg-devsuite-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="generate-story-button flex items-center gap-1 px-2.5 py-1.5 bg-transparent text-devsuite-primary text-xs font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all hover:bg-devsuite-primary/10 disabled:opacity-50 disabled:cursor-not-allowed min-h-[32px]"
                   >
-                    <Sparkles className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
-                    {isGenerating ? 'Generating...' : `Generate with ${getProviderName(selectedProvider)}`}
+                    {isGenerating ? (
+                      <div className="generate-button-loading">
+                        <RobotRunner message="AI Robot generating story..." />
+                      </div>
+                    ) : (
+                      <>
+                        <Star className="w-3.5 h-3.5" />
+                        <span>Generate with {getProviderName(selectedProvider)}</span>
+                      </>
+                    )}
                   </button>
                   
                   <button
@@ -400,5 +423,108 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
         </div>
       </div>
     </div>
+
+    <style jsx>{`
+      /* Robot Running Animation for Generate Story */
+      .robot-runner {
+        position: relative;
+        width: 80px;
+        height: 60px;
+        animation: robot-run 2s ease-in-out infinite;
+      }
+
+      .robot-body {
+        position: absolute;
+        bottom: 20px;
+        left: 25px;
+        width: 30px;
+        height: 25px;
+        background: var(--devsuite-primary);
+        border-radius: 6px;
+      }
+
+      .robot-head-run {
+        position: absolute;
+        bottom: 40px;
+        left: 30px;
+        width: 20px;
+        height: 20px;
+        background: var(--devsuite-primary);
+        border-radius: 4px;
+      }
+
+      .robot-head-run::before {
+        content: '';
+        position: absolute;
+        top: 6px;
+        left: 4px;
+        width: 3px;
+        height: 3px;
+        background: var(--text-inverse);
+        border-radius: 50%;
+        box-shadow: 9px 0 0 var(--text-inverse);
+      }
+
+      .robot-leg {
+        position: absolute;
+        bottom: 5px;
+        width: 6px;
+        height: 18px;
+        background: var(--devsuite-primary);
+        border-radius: 3px;
+        animation: leg-move 0.8s ease-in-out infinite;
+      }
+
+      .robot-leg.left { left: 30px; }
+      .robot-leg.right { left: 44px; animation-delay: 0.4s; }
+
+      .robot-arm {
+        position: absolute;
+        bottom: 30px;
+        width: 4px;
+        height: 15px;
+        background: var(--devsuite-primary);
+        border-radius: 2px;
+        animation: arm-swing 0.8s ease-in-out infinite;
+      }
+
+      .robot-arm.left { left: 22px; }
+      .robot-arm.right { left: 54px; animation-delay: 0.4s; }
+
+      @keyframes robot-run {
+        0%, 100% { transform: translateX(-10px); }
+        50% { transform: translateX(10px); }
+      }
+
+      @keyframes leg-move {
+        0%, 100% { transform: rotate(20deg); }
+        50% { transform: rotate(-20deg); }
+      }
+
+      @keyframes arm-swing {
+        0%, 100% { transform: rotate(-30deg); }
+        50% { transform: rotate(30deg); }
+      }
+
+      .generate-button-loading {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        justify-content: center;
+      }
+
+      .robot-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .robot-message {
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+    `}</style>
   );
 };

@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* DevSuite CSS Variables for Robot Animation */
+:root {
+  --devsuite-primary: #FC8019;
+  --text-inverse: #FFFFFF;
+  --text-secondary: #3E3E3E;
+}
