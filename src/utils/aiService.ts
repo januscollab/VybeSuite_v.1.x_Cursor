@@ -10,13 +10,14 @@ export class AIServiceError extends Error {
 export async function generateStoryWithOpenAI(
   prompt: string,
   apiKey: string,
-  model: string
+  model: string,
+  systemPrompt?: string
 ): Promise<AIGenerationResponse> {
   if (!apiKey.trim()) {
     throw new AIServiceError('OpenAI API key is required', 'openai');
   }
 
-  const systemPrompt = `You are an expert Agile/Scrum story writer. Generate a user story based on the given prompt.
+  const defaultSystemPrompt = `You are an expert Agile/Scrum story writer. Generate a user story based on the given prompt.
 
 Return a JSON response with exactly this structure:
 {
@@ -26,6 +27,8 @@ Return a JSON response with exactly this structure:
 }
 
 Make the title follow proper user story format. Include detailed acceptance criteria and technical requirements in the description. Suggest 3-5 relevant tags.`;
+
+  const finalSystemPrompt = systemPrompt || defaultSystemPrompt;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -37,7 +40,7 @@ Make the title follow proper user story format. Include detailed acceptance crit
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: finalSystemPrompt },
           { role: 'user', content: prompt }
         ],
         max_tokens: 1000,
@@ -105,13 +108,14 @@ Make the title follow proper user story format. Include detailed acceptance crit
 export async function generateStoryWithAnthropic(
   prompt: string,
   apiKey: string,
-  model: string
+  model: string,
+  systemPrompt?: string
 ): Promise<AIGenerationResponse> {
   if (!apiKey.trim()) {
     throw new AIServiceError('Anthropic API key is required', 'anthropic');
   }
 
-  const systemPrompt = `You are an expert Agile/Scrum story writer. Generate a user story based on the given prompt.
+  const defaultSystemPrompt = `You are an expert Agile/Scrum story writer. Generate a user story based on the given prompt.
 
 Return a JSON response with exactly this structure:
 {
@@ -122,18 +126,26 @@ Return a JSON response with exactly this structure:
 
 Make the title follow proper user story format. Include detailed acceptance criteria and technical requirements in the description. Suggest 3-5 relevant tags.`;
 
+  const finalSystemPrompt = systemPrompt || defaultSystemPrompt;
+
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // Use proxy in development, direct API in production
+    const apiUrl = import.meta.env.DEV 
+      ? '/api/anthropic/v1/messages'
+      : 'https://api.anthropic.com/v1/messages';
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'x-api-key': apiKey,
         'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
         model,
         max_tokens: 1000,
-        system: systemPrompt,
+        system: finalSystemPrompt,
         messages: [
           { role: 'user', content: prompt }
         ]
@@ -198,12 +210,12 @@ Make the title follow proper user story format. Include detailed acceptance crit
 }
 
 export async function generateStory(request: AIGenerationRequest): Promise<AIGenerationResponse> {
-  const { provider, model, prompt, apiKey } = request;
+  const { provider, model, prompt, apiKey, systemPrompt } = request;
 
   if (provider === 'openai') {
-    return generateStoryWithOpenAI(prompt, apiKey, model);
+    return generateStoryWithOpenAI(prompt, apiKey, model, systemPrompt);
   } else if (provider === 'anthropic') {
-    return generateStoryWithAnthropic(prompt, apiKey, model);
+    return generateStoryWithAnthropic(prompt, apiKey, model, systemPrompt);
   } else {
     throw new AIServiceError(`Unsupported provider: ${provider}`, provider);
   }
@@ -215,7 +227,8 @@ export async function testConnection(provider: 'openai' | 'anthropic', apiKey: s
       provider,
       model,
       prompt: 'test connection',
-      apiKey
+      apiKey,
+      systemPrompt: 'You are a test assistant. Respond with a simple JSON: {"title":"test","description":"test","tags":["test"]}'
     });
     return true;
   } catch (error) {

@@ -57,6 +57,7 @@ export interface AIGenerationRequest {
   model: string;
   prompt: string;
   apiKey: string;
+  systemPrompt?: string;
 }
 
 export interface AIGenerationResponse {

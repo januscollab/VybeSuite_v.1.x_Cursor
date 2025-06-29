@@ -1,7 +1,7 @@
 import React from 'react';
 import { DragDropContext, DropResult, Droppable, Draggable } from '@hello-pangea/dnd';
 import { DroppableSprintCard } from './DroppableSprintCard';
-import { Sprint, SprintStats } from '../types';
+import { Sprint, SprintStats, Story } from '../types';
 
 /**
  * SPRINT LAYOUT RULES - CRITICAL DESIGN REQUIREMENT
@@ -27,6 +27,8 @@ interface DragDropSprintBoardProps {
   onToggleStory: (storyId: string) => void;
   onMoveStory: (storyId: string, destinationSprintId: string, newPosition: number) => void;
   onMoveSprint?: (sprintId: string, newPosition: number) => void;
+  onEditStory?: (story: Story) => void;
+  onCloseBoard?: () => void;
 }
 
 export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
@@ -39,7 +41,9 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
   onDeleteSprint,
   onToggleStory,
   onMoveStory,
-  onMoveSprint
+  onMoveSprint,
+  onEditStory,
+  onCloseBoard
 }) => {
   const handleDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -141,6 +145,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
                             onCloseSprint={(type) => onCloseSprint(sprint.id, type)}
                             onDeleteSprint={() => onDeleteSprint(sprint.id)}
                             onToggleStory={onToggleStory}
+                            onEditStory={onEditStory}
                           />
                         </div>
                       )}
@@ -161,6 +166,8 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
                         onCloseSprint={(type) => onCloseSprint(sprint.id, type)}
                         onDeleteSprint={() => onDeleteSprint(sprint.id)}
                         onToggleStory={onToggleStory}
+                        onEditStory={onEditStory}
+                        onCloseBoard={sprint.id === 'priority' ? onCloseBoard : undefined}
                       />
                     );
                   })}
@@ -178,9 +185,14 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
         )}
 
         {/* 
-          FUTURE ENHANCEMENTS SPRINT (BACKLOG) - FULL WIDTH WITH TWO-COLUMN STORIES
+          BACKLOG - FUTURE ENHANCEMENTS SPRINT - FULL WIDTH WITH TWO-COLUMN STORIES
           This sprint is always positioned last and uses the full page width
           Stories are displayed in a two-column layout for better visibility
+          CRITICAL REQUIREMENTS:
+          - ALWAYS 100% page width
+          - ALWAYS two columns of stories
+          - ALWAYS same color as Priority Sprint (devsuite-primary styling)
+          - NEVER draggable or deletable
         */}
         {backlogSprint && (
           <div className="w-full">
@@ -190,13 +202,15 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
               icon={backlogSprint.icon}
               stories={backlogSprint.stories}
               stats={getSprintStats(backlogSprint.id)}
-              isBacklog={backlogSprint.isBacklog}
+              isBacklog={true}  // Explicitly set to true for backlog sprint
               operationLoading={operationLoading}
+              isDraggable={false}  // Explicitly prevent dragging
               onAddStory={() => onAddStory(backlogSprint.id)}
               onOpenSprint={() => onOpenSprint(backlogSprint.id)}
               onCloseSprint={(type) => onCloseSprint(backlogSprint.id, type)}
-              onDeleteSprint={() => onDeleteSprint(backlogSprint.id)}
+              onDeleteSprint={undefined}  // Prevent deletion by not providing handler
               onToggleStory={onToggleStory}
+              onEditStory={onEditStory}
             />
           </div>
         )}

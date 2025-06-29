@@ -20,13 +20,16 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
     email: '',
     storyNumberPrefix: 'STORY',
     preferredHomepage: 'Sprint Board',
-    newPassword: ''
+    newPassword: '',
+    confirmPassword: ''
   });
   
-  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   // Update form data when userProfile changes
   useEffect(() => {
@@ -37,7 +40,8 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
         email: userProfile.email,
         storyNumberPrefix: userProfile.settings.storyNumberPrefix,
         preferredHomepage: userProfile.settings.preferredHomepage,
-        newPassword: ''
+        newPassword: '',
+        confirmPassword: ''
       });
     }
   }, [userProfile]);
@@ -47,7 +51,9 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
     if (!isOpen) {
       setSaveError(null);
       setSaveSuccess(false);
-      setShowPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
+      setPasswordError(null);
       if (userProfile) {
         setFormData({
           firstName: userProfile.firstName,
@@ -55,7 +61,8 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
           email: userProfile.email,
           storyNumberPrefix: userProfile.settings.storyNumberPrefix,
           preferredHomepage: userProfile.settings.preferredHomepage,
-          newPassword: ''
+          newPassword: '',
+          confirmPassword: ''
         });
       }
     }
@@ -77,9 +84,26 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
     e.preventDefault();
     if (!userProfile) return;
 
+    // Clear previous errors
     setSaving(true);
     setSaveError(null);
     setSaveSuccess(false);
+    setPasswordError(null);
+
+    // Validate passwords if provided
+    if (formData.newPassword.trim() || formData.confirmPassword.trim()) {
+      if (formData.newPassword !== formData.confirmPassword) {
+        setPasswordError('Passwords do not match');
+        setSaving(false);
+        return;
+      }
+      
+      if (formData.newPassword.length < 6) {
+        setPasswordError('Password must be at least 6 characters long');
+        setSaving(false);
+        return;
+      }
+    }
 
     try {
       // Prepare updates object
@@ -112,11 +136,6 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
 
       // Change password if provided
       if (formData.newPassword.trim()) {
-        if (formData.newPassword.length < 6) {
-          setSaveError('Password must be at least 6 characters long');
-          return;
-        }
-        
         const success = await changePassword(formData.newPassword);
         if (!success) {
           setSaveError('Failed to change password');
@@ -313,30 +332,82 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
               <div>
                 <h3 className="text-lg font-semibold text-text-primary mb-4">Security</h3>
                 
-                <div>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-text-primary mb-2">
-                    Change Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="newPassword"
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.newPassword}
-                      onChange={(e) => setFormData(prev => ({ ...prev, newPassword: e.target.value }))}
-                      placeholder="Enter new password..."
-                      className="w-full px-3 py-2.5 pr-12 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-text-quaternary hover:text-text-secondary transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                {/* Password Error Display */}
+                {passwordError && (
+                  <div className="mb-4 p-3 bg-error-light border border-error rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-error-dark" />
+                      <p className="text-error-dark text-sm">{passwordError}</p>
+                    </div>
                   </div>
-                  <p className="text-xs text-text-tertiary mt-1">
-                    Leave blank to keep current password. Minimum 6 characters.
-                  </p>
+                )}
+                
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="newPassword" className="block text-sm font-medium text-text-primary mb-2">
+                      New Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="newPassword"
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={formData.newPassword}
+                        onChange={(e) => {
+                          setFormData(prev => ({ ...prev, newPassword: e.target.value }));
+                          setPasswordError(null); // Clear error when user types
+                        }}
+                        placeholder="Enter new password..."
+                        className="w-full px-3 py-2.5 pr-12 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-text-quaternary hover:text-text-secondary transition-colors"
+                      >
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-text-primary mb-2">
+                      Confirm New Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={formData.confirmPassword}
+                        onChange={(e) => {
+                          setFormData(prev => ({ ...prev, confirmPassword: e.target.value }));
+                          setPasswordError(null); // Clear error when user types
+                        }}
+                        placeholder="Confirm new password..."
+                        className="w-full px-3 py-2.5 pr-12 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-text-quaternary hover:text-text-secondary transition-colors"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-info-light border border-info rounded-lg p-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 text-info-dark mt-0.5">🔒</div>
+                    <div>
+                      <h4 className="font-medium text-info-dark text-sm mb-1">Password Requirements</h4>
+                      <ul className="text-info-dark text-xs space-y-1">
+                        <li>• Minimum 6 characters long</li>
+                        <li>• Both password fields must match</li>
+                        <li>• Leave blank to keep current password</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               </div>
             </form>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { DraggableProvidedDragHandleProps } from '@hello-pangea/dnd';
 import { Droppable } from '@hello-pangea/dnd';
 import { validateSprintLayout } from '../constants/layout';
-import { Plus, Play, FileText, GripVertical, Trash2 } from 'lucide-react';
+import { Plus, Play, FileText, GripVertical, Trash2, X } from 'lucide-react';
 import { DraggableStory } from './DraggableStory';
 import { DeleteSprintConfirmation } from './DeleteSprintConfirmation';
 import { Story, SprintStats } from '../types';
@@ -22,6 +22,8 @@ interface DroppableSprintCardProps {
   onCloseSprint: (type: 'completed' | 'all') => void;
   onDeleteSprint?: () => void;
   onToggleStory: (storyId: string) => void;
+  onEditStory?: (story: Story) => void;
+  onCloseBoard?: () => void;
 }
 
 export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
@@ -38,7 +40,9 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
   onOpenSprint,
   onCloseSprint,
   onDeleteSprint,
-  onToggleStory
+  onToggleStory,
+  onEditStory,
+  onCloseBoard
 }) => {
   const [showCloseDropdown, setShowCloseDropdown] = useState(false);
   const [dropdownTimeout, setDropdownTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -87,16 +91,27 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
   const layoutRules = validateSprintLayout({ id, isBacklog });
   const isPrioritySprint = id === 'priority';
   const isBacklogSprint = isBacklog;
-  const isUserGeneratedSprint = layoutRules.isDeletable;
+  const isUserGeneratedSprint = layoutRules.isDeletable && !isBacklogSprint; // Backlog is never deletable
 
   return (
     <div className={`bg-bg-primary border rounded-xl p-6 shadow-devsuite transition-all hover:shadow-devsuite-hover hover:border-border-strong relative ${
       isPrioritySprint 
         ? 'border-devsuite-primary border-2 bg-gradient-to-br from-bg-primary to-devsuite-primary-subtle' 
         : isBacklogSprint
-        ? 'border-devsuite-primary border-2 bg-gradient-to-br from-bg-primary to-devsuite-primary-subtle'
+        ? 'border-devsuite-primary border-2 bg-gradient-to-br from-bg-primary to-devsuite-primary-subtle'  // Same styling as Priority Sprint
         : 'border-border-default'
     }`}>
+      {/* Close Button for Priority Sprint */}
+      {isPrioritySprint && onCloseBoard && (
+        <button
+          onClick={onCloseBoard}
+          className="absolute top-3 right-3 w-8 h-8 border-none bg-transparent cursor-pointer rounded-md flex items-center justify-center text-text-quaternary hover:bg-bg-canvas hover:text-text-secondary transition-all"
+          title="Close Priority Sprint Board"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      )}
+
       {/* Sprint Header */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
@@ -143,7 +158,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1.5">
+        <div className={`flex items-center gap-1.5 ${isPrioritySprint ? 'mr-10' : ''}`}>
           <button
             onClick={onAddStory}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary rounded-md transition-all"
@@ -161,49 +176,52 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
             Open
           </button>
 
-          <div className="relative">
-            <button
-              onMouseEnter={handleMouseEnterClose}
-              onMouseLeave={handleMouseLeaveClose}
-              disabled={isSprintLoading}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary disabled:hover:bg-transparent disabled:hover:text-text-secondary"
-            >
-              <FileText className="w-4 h-4" />
-              Close
-              <span className="text-xs">▼</span>
-            </button>
-
-            {showCloseDropdown && (
-              <div 
-                className="absolute top-full right-0 mt-1 bg-bg-primary border border-border-default rounded-lg shadow-devsuite-hover z-50 min-w-44 overflow-hidden"
+          {/* Only show Close button if NOT a backlog sprint and NOT priority sprint */}
+          {!isBacklogSprint && !isPrioritySprint && (
+            <div className="relative">
+              <button
                 onMouseEnter={handleMouseEnterClose}
                 onMouseLeave={handleMouseLeaveClose}
+                disabled={isSprintLoading}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary disabled:hover:bg-transparent disabled:hover:text-text-secondary"
               >
-                <button
-                  onClick={() => {
-                    handleCloseSprint(id, 'completed');
-                  }}
-                  disabled={stats.done === 0 || isSprintLoading}
-                  className="flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors border-b border-border-subtle disabled:opacity-50 disabled:cursor-not-allowed disabled:text-text-disabled disabled:hover:bg-transparent disabled:hover:text-text-disabled text-text-secondary hover:bg-bg-muted hover:text-text-primary"
+                <FileText className="w-4 h-4" />
+                Close
+                <span className="text-xs">▼</span>
+              </button>
+
+              {showCloseDropdown && (
+                <div 
+                  className="absolute top-full right-0 mt-1 bg-bg-primary border border-border-default rounded-lg shadow-devsuite-hover z-50 min-w-44 overflow-hidden"
+                  onMouseEnter={handleMouseEnterClose}
+                  onMouseLeave={handleMouseLeaveClose}
                 >
-                  Close Completed
-                </button>
-                <button
-                  onClick={() => {
-                    handleCloseSprint(id, 'all');
-                  }}
-                  disabled={isSprintLoading}
-                  className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors disabled:opacity-50"
-                >
-                  Close All
-                </button>
-              </div>
-            )}
-          </div>
+                  <button
+                    onClick={() => {
+                      handleCloseSprint(id, 'completed');
+                    }}
+                    disabled={stats.done === 0 || isSprintLoading}
+                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors border-b border-border-subtle disabled:opacity-50 disabled:cursor-not-allowed disabled:text-text-disabled disabled:hover:bg-transparent disabled:hover:text-text-disabled text-text-secondary hover:bg-bg-muted hover:text-text-primary"
+                  >
+                    Close Completed
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleCloseSprint(id, 'all');
+                    }}
+                    disabled={isSprintLoading}
+                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors disabled:opacity-50"
+                  >
+                    Close All
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Delete Button - Bottom Left for User-Generated Sprints */}
+      {/* Delete Button - Bottom Left for User-Generated Sprints Only (not backlog or priority) */}
       {isUserGeneratedSprint && (
         <button
           onClick={handleDeleteSprint}
@@ -225,7 +243,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
               snapshot.isDraggingOver 
                 ? 'bg-devsuite-primary-subtle border-2 border-dashed border-devsuite-primary rounded-lg p-2' 
                 : ''
-            } ${isBacklog ? 'grid grid-cols-1 lg:grid-cols-2 gap-2' : 'space-y-2'}`}
+            } ${isBacklog ? 'grid grid-cols-1 lg:grid-cols-2 gap-2' : 'space-y-2'}`}  // Two-column layout for backlog
           >
             {stories.map((story, index) => (
               <DraggableStory
@@ -233,6 +251,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
                 story={story}
                 index={index}
                 onToggle={onToggleStory}
+                onEdit={onEditStory}
                 isToggling={operationLoading[`toggle-story-${story.id}`]}
               />
             ))}
@@ -242,9 +261,9 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
             {stories.length === 0 && (
               <div className="flex items-center justify-center py-8 text-text-quaternary">
                 <div className="text-center">
-                  <div className="text-2xl mb-2">📝</div>
-                  <p className="text-sm">No stories yet</p>
-                  <p className="text-xs">Drag stories here or click "Add Story"</p>
+                  <div className="text-2xl mb-2">{isBacklogSprint ? '💡' : '📝'}</div>
+                  <p className="text-sm">{isBacklogSprint ? 'No future enhancements yet' : 'No stories yet'}</p>
+                  <p className="text-xs">{isBacklogSprint ? 'Add ideas for future development' : 'Drag stories here or click "Add Story"'}</p>
                 </div>
               </div>
             )}

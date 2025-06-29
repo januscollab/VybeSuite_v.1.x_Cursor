@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Copy, CheckCircle, Play } from 'lucide-react';
 import { Sprint, Story } from '../types';
+import { usePromptManager } from '../utils/promptService';
 
 interface OpenSprintModalProps {
   isOpen: boolean;
@@ -15,15 +16,24 @@ export const OpenSprintModal: React.FC<OpenSprintModalProps> = ({
 }) => {
   const [prompt, setPrompt] = useState('');
   const [copied, setCopied] = useState(false);
+  const { getOpenSprintPrompt } = usePromptManager();
 
   // Generate the prompt when modal opens
   useEffect(() => {
     if (isOpen && sprint) {
       const openStories = sprint.stories.filter(story => !story.completed);
-      const generatedPrompt = generateSprintPrompt(sprint.title, openStories);
+      const generatedPrompt = getOpenSprintPrompt({
+        sprintTitle: sprint.title,
+        stories: openStories.map(story => ({
+          number: story.number,
+          title: story.title,
+          description: story.description || 'No description provided'
+        }))
+      });
       setPrompt(generatedPrompt);
+      console.log('Generated Prompt Content (copy this string):', generatedPrompt);
     }
-  }, [isOpen, sprint]);
+  }, [isOpen, sprint, getOpenSprintPrompt]);
 
   // Handle escape key
   useEffect(() => {
@@ -36,33 +46,6 @@ export const OpenSprintModal: React.FC<OpenSprintModalProps> = ({
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
-
-  const generateSprintPrompt = (sprintTitle: string, openStories: Story[]): string => {
-    // Start with the base prompt format from /prompts/open_sprint
-    let promptText = `Review and Provide a Build Plan for the following features for ${sprintTitle} Sprint:\n\n`;
-
-    // Add each open story
-    openStories.forEach((story) => {
-      promptText += `${story.number}: ${story.title}\n`;
-      promptText += `Description: ${story.description || 'No description provided'}\n`;
-      promptText += `-----\n\n`;
-    });
-
-    // Add the instruction section
-    promptText += `Prompt user with the following information and request permission to proceed prior to implementing any change\n`;
-    promptText += `1. A Complete Plan for implementing the above story changes\n`;
-    promptText += `2. Potential challenges and risks to these changes and solutions to overcome\n\n`;
-
-    // Add completion status format
-    promptText += `On completion of changes please provide a full Completion Status Report for each story in the format below:\n\n`;
-    promptText += `## Sprint Completion Status Report:\n`;
-    openStories.forEach((story) => {
-      promptText += `✅ ${story.number}: ${story.title}\n`;
-    });
-    promptText += `\n//Update the status of the story appropriately with ✅ or ❌`;
-
-    return promptText;
-  };
 
   const handleCopyToClipboard = async () => {
     try {

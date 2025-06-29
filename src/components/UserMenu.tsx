@@ -96,17 +96,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({ onAddSprint, onOpenSettings,
               <Plus className="w-4 h-4" />
               Add Sprint
             </button>
-
-            <button
-              onClick={() => {
-                console.log('Sprint settings clicked'); // Placeholder for future feature
-                setIsOpen(false);
-              }}
-              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors border-b border-border-subtle"
-            >
-              <Settings className="w-4 h-4" />
-              Sprint Settings
-            </button>
           </div>
           
           {/* Sign Out */}
