@@ -121,6 +121,26 @@ export const OpenSprintModal: React.FC<OpenSprintModalProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Generated Prompt - Now First */}
+              <div>
+                <label htmlFor="sprintPrompt" className="block font-semibold text-sm mb-2 text-text-primary">
+                  Development Prompt
+                  <span className="font-normal text-text-tertiary ml-2">
+                    (Edit as needed before copying)
+                  </span>
+                </label>
+                <textarea
+                  id="sprintPrompt"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className="w-full h-96 px-4 py-3 border border-border-default rounded-lg bg-bg-primary text-text-primary font-mono text-sm resize-vertical focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+                  placeholder="Generated prompt will appear here..."
+                />
+                <div className="text-xs text-text-tertiary mt-2">
+                  This prompt includes all open stories and follows the standard format for development handoff.
+                </div>
+              </div>
+
               {/* Stories Summary */}
               <div className="bg-bg-muted rounded-lg p-4">
                 <h3 className="font-semibold text-text-primary mb-3">Stories to be included:</h3>
@@ -150,26 +170,6 @@ export const OpenSprintModal: React.FC<OpenSprintModalProps> = ({
                       </div>
                     </div>
                   ))}
-                </div>
-              </div>
-
-              {/* Generated Prompt */}
-              <div>
-                <label htmlFor="sprintPrompt" className="block font-semibold text-sm mb-2 text-text-primary">
-                  Development Prompt
-                  <span className="font-normal text-text-tertiary ml-2">
-                    (Edit as needed before copying)
-                  </span>
-                </label>
-                <textarea
-                  id="sprintPrompt"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  className="w-full h-96 px-4 py-3 border border-border-default rounded-lg bg-bg-primary text-text-primary font-mono text-sm resize-vertical focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
-                  placeholder="Generated prompt will appear here..."
-                />
-                <div className="text-xs text-text-tertiary mt-2">
-                  This prompt includes all open stories and follows the standard format for development handoff.
                 </div>
               </div>
             </div>

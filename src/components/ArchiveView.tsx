@@ -8,21 +8,16 @@ import { SearchFilterPanel } from './SearchFilterPanel';
 import { BulkActionsBar } from './BulkActionsBar';
 import { ExportModal } from './ExportModal';
 import { ArchiveStoryCard } from './ArchiveStoryCard';
-import { ArchiveSprintCard } from './ArchiveSprintCard';
-import { Story, Sprint } from '../types';
+import { Story } from '../types';
 
 export const ArchiveView: React.FC = () => {
-  const [archivedSprints, setArchivedSprints] = useState<Sprint[]>([]);
-  const [orphanedStories, setOrphanedStories] = useState<Story[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
+  const [archivedStories, setArchivedStories] = useState<Story[]>([]);
   const [showExportModal, setShowExportModal] = useState(false);
-  const [viewMode, setViewMode] = useState<'all' | 'sprints' | 'stories'>('all');
 
   const { 
     loading: archiveLoading, 
     error: archiveError, 
     loadArchivedData, 
-    restoreSprint, 
     restoreStories,
     getArchiveStats 
   } = useArchive();
@@ -63,8 +58,12 @@ export const ArchiveView: React.FC = () => {
   const loadData = async () => {
     const result = await loadArchivedData();
     if (result) {
-      setArchivedSprints(result.sprints);
-      setOrphanedStories(result.orphanedStories);
+      // Flatten all archived stories from sprints and orphaned stories
+      const allArchivedStories = [
+        ...result.sprints.flatMap(sprint => sprint.stories),
+        ...result.orphanedStories
+      ];
+      setArchivedStories(allArchivedStories);
     }
   };
 
@@ -72,14 +71,6 @@ export const ArchiveView: React.FC = () => {
     const archiveStats = await getArchiveStats();
     if (archiveStats) {
       setStats(archiveStats);
-    }
-  };
-
-  const handleRestoreSprint = async (sprintId: string) => {
-    const success = await restoreSprint(sprintId);
-    if (success) {
-      await loadData();
-      await loadStats();
     }
   };
 
@@ -126,29 +117,17 @@ export const ArchiveView: React.FC = () => {
     }
   };
 
-  const getAllArchivedStories = () => {
-    const sprintStories = archivedSprints.flatMap(sprint => sprint.stories);
-    return [...sprintStories, ...orphanedStories];
-  };
-
   const getDisplayData = () => {
     if (hasActiveFilters) {
-      return {
-        sprints: searchResults.sprints.filter(sprint => sprint.archivedAt),
-        stories: searchResults.stories.filter(story => story.archivedAt)
-      };
+      return searchResults.stories.filter(story => story.archivedAt);
     }
-
-    return {
-      sprints: archivedSprints,
-      stories: getAllArchivedStories()
-    };
+    return archivedStories;
   };
 
-  const displayData = getDisplayData();
+  const displayStories = getDisplayData();
   const loading = archiveLoading || searchLoading;
 
-  if (loading && archivedSprints.length === 0) {
+  if (loading && archivedStories.length === 0) {
     return (
       <div className="p-6 max-w-none mx-auto">
         <div className="flex items-center justify-center py-12">
@@ -166,8 +145,6 @@ export const ArchiveView: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-text-primary mb-2">Archive</h1>
           <div className="flex items-center gap-4 text-sm text-text-tertiary">
-            <span>{stats.archivedSprints} archived sprints</span>
-            <span>•</span>
             <span>{stats.archivedStories} archived stories</span>
             {hasActiveFilters && (
               <>
@@ -181,53 +158,6 @@ export const ArchiveView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* View Mode Toggle */}
-          <div className="flex items-center gap-1 bg-bg-muted rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('all')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                viewMode === 'all'
-                  ? 'bg-bg-primary text-devsuite-primary shadow-sm'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setViewMode('sprints')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                viewMode === 'sprints'
-                  ? 'bg-bg-primary text-devsuite-primary shadow-sm'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              Sprints
-            </button>
-            <button
-              onClick={() => setViewMode('stories')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                viewMode === 'stories'
-                  ? 'bg-bg-primary text-devsuite-primary shadow-sm'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              Stories
-            </button>
-          </div>
-
-          {/* Action Buttons */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-all ${
-              showFilters || hasActiveFilters
-                ? 'bg-devsuite-primary text-text-inverse'
-                : 'bg-bg-primary border border-border-default text-text-secondary hover:bg-bg-muted'
-            }`}
-          >
-            <Filter className="w-4 h-4" />
-            Filters
-          </button>
-
           <button
             onClick={() => setShowExportModal(true)}
             className="flex items-center gap-2 px-3 py-2 text-sm font-medium bg-bg-primary border border-border-default text-text-secondary hover:bg-bg-muted rounded-lg transition-all"
@@ -238,16 +168,14 @@ export const ArchiveView: React.FC = () => {
         </div>
       </div>
 
-      {/* Search and Filter Panel */}
-      {showFilters && (
-        <SearchFilterPanel
-          filters={filters}
-          onUpdateFilters={updateFilters}
-          onClearFilters={clearFilters}
-          showArchived={true}
-          className="mb-6"
-        />
-      )}
+      {/* Compact Search and Filter Panel - Always Visible */}
+      <SearchFilterPanel
+        filters={filters}
+        onUpdateFilters={updateFilters}
+        onClearFilters={clearFilters}
+        showArchived={true}
+        className="mb-6"
+      />
 
       {/* Bulk Actions Bar */}
       {selectedStories.length > 0 && (
@@ -269,16 +197,16 @@ export const ArchiveView: React.FC = () => {
         </div>
       )}
 
-      {displayData.sprints.length === 0 && displayData.stories.length === 0 ? (
+      {displayStories.length === 0 ? (
         <div className="bg-bg-primary border border-border-default rounded-xl p-12 text-center">
           <Archive className="w-12 h-12 text-text-quaternary mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-text-primary mb-2">
-            {hasActiveFilters ? 'No matching archived items' : 'No archived items'}
+            {hasActiveFilters ? 'No matching archived stories' : 'No archived stories'}
           </h3>
           <p className="text-text-tertiary mb-4">
             {hasActiveFilters 
-              ? 'Try adjusting your search filters to find archived items.'
-              : 'Archived sprints and stories will appear here when you archive them.'
+              ? 'Try adjusting your search filters to find archived stories.'
+              : 'Archived stories will appear here when you archive them.'
             }
           </p>
           {hasActiveFilters && (
@@ -292,46 +220,22 @@ export const ArchiveView: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Archived Sprints */}
-          {(viewMode === 'all' || viewMode === 'sprints') && displayData.sprints.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold text-text-primary mb-4">
-                Archived Sprints ({displayData.sprints.length})
-              </h2>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {displayData.sprints.map(sprint => (
-                  <ArchiveSprintCard
-                    key={sprint.id}
-                    sprint={sprint}
-                    selectedStories={selectedStories}
-                    onRestoreSprint={() => handleRestoreSprint(sprint.id)}
-                    onRestoreStories={handleRestoreStories}
-                    onToggleStorySelection={toggleStorySelection}
-                  />
-                ))}
-              </div>
+          <div>
+            <h2 className="text-xl font-semibold text-text-primary mb-4">
+              Archived Stories ({displayStories.length})
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {displayStories.map(story => (
+                <ArchiveStoryCard
+                  key={story.id}
+                  story={story}
+                  isSelected={selectedStories.includes(story.id)}
+                  onToggleSelection={() => toggleStorySelection(story.id)}
+                  onRestore={() => handleRestoreStories([story.id])}
+                />
+              ))}
             </div>
-          )}
-
-          {/* Orphaned Stories */}
-          {(viewMode === 'all' || viewMode === 'stories') && orphanedStories.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold text-text-primary mb-4">
-                Archived Stories ({orphanedStories.length})
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {orphanedStories.map(story => (
-                  <ArchiveStoryCard
-                    key={story.id}
-                    story={story}
-                    isSelected={selectedStories.includes(story.id)}
-                    onToggleSelection={() => toggleStorySelection(story.id)}
-                    onRestore={() => handleRestoreStories([story.id])}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -339,8 +243,8 @@ export const ArchiveView: React.FC = () => {
       <ExportModal
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
-        sprints={displayData.sprints}
-        stories={displayData.stories}
+        sprints={[]} // No sprints in archive view
+        stories={displayStories}
         filters={hasActiveFilters ? filters : undefined}
       />
     </div>

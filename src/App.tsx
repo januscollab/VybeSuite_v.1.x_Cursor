@@ -7,6 +7,7 @@ import { ArchiveView } from './components/ArchiveView';
 import { AddStoryModal } from './components/AddStoryModal';
 import { SettingsModal } from './components/SettingsModal';
 import { OpenSprintModal } from './components/OpenSprintModal';
+import { AddSprintModal } from './components/AddSprintModal';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useSupabaseStories } from './hooks/useSupabaseStories';
@@ -35,6 +36,7 @@ function AppContent() {
     sprintId: '',
     sprintTitle: ''
   });
+  const [addSprintModal, setAddSprintModal] = useState(false);
   const [openSprintModal, setOpenSprintModal] = useState<{
     isOpen: boolean;
     sprint: Sprint | null;
@@ -50,6 +52,7 @@ function AppContent() {
     error, 
     operationLoading,
     addStory, 
+    addSprint,
     toggleStory, 
     moveStory, 
     closeSprint,
@@ -58,8 +61,15 @@ function AppContent() {
   } = useSupabaseStories();
 
   const handleAddSprint = () => {
-    console.log('Add Sprint clicked');
-    // Will implement in Sprint 2
+    setAddSprintModal(true);
+  };
+
+  const handleCloseAddSprintModal = () => {
+    setAddSprintModal(false);
+  };
+
+  const handleSubmitSprint = (title: string, icon: string, isBacklog: boolean, isDraggable: boolean) => {
+    addSprint(title, icon, isBacklog, isDraggable);
   };
 
   const handleOpenSettings = () => {
@@ -216,6 +226,12 @@ function AppContent() {
                   onClose={handleCloseOpenSprintModal}
                 />
               )}
+
+              <AddSprintModal
+                isOpen={addSprintModal}
+                onClose={handleCloseAddSprintModal}
+                onSubmit={handleSubmitSprint}
+              />
             </>
           )}
         </div>

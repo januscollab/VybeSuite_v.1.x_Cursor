@@ -67,51 +67,48 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
     filters.dateRange.end !== null;
 
   return (
-    <div className={`bg-bg-primary border border-border-default rounded-xl p-6 ${className}`}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-text-primary flex items-center gap-2">
-          <Filter className="w-5 h-5" />
-          Search & Filter
-        </h3>
-        {hasActiveFilters && (
+    <div className={`bg-bg-primary border border-border-default rounded-lg p-4 ${className}`}>
+      {/* Compact Header */}
+      {hasActiveFilters && (
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium text-devsuite-primary">
+            Filters Active: {getFilterSummary.join(', ')}
+          </span>
           <button
             onClick={onClearFilters}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-text-secondary hover:text-error transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-xs text-text-secondary hover:text-error transition-colors"
           >
-            <X className="w-4 h-4" />
-            Clear All
+            <X className="w-3 h-3" />
+            Clear
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Search Query */}
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-2">
-            Search Stories
-          </label>
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-3 items-end">
+          {/* Search Input */}
           <div className="relative">
+            <label className="block text-xs font-medium text-text-primary mb-1">Search</label>
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-quaternary" />
             <input
               type="text"
               value={filters.query}
               onChange={(e) => onUpdateFilters({ query: e.target.value })}
-              placeholder="Search titles, descriptions, numbers..."
-              className="w-full pl-10 pr-4 py-2.5 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+              placeholder="Search stories..."
+              className="w-full pl-10 pr-4 py-2 border border-border-default rounded-md bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-1 focus:ring-devsuite-primary/20 transition-all text-sm"
             />
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label className="block text-xs font-medium text-text-primary mb-1">
               Status
             </label>
             <select
               value={filters.status}
               onChange={(e) => onUpdateFilters({ status: e.target.value as 'all' | 'completed' | 'todo' })}
-              className="w-full px-3 py-2.5 border border-border-default rounded-lg bg-bg-primary text-text-primary focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+              className="w-full px-3 py-2 border border-border-default rounded-md bg-bg-primary text-text-primary focus:outline-none focus:border-devsuite-primary focus:ring-1 focus:ring-devsuite-primary/20 transition-all text-sm"
             >
               <option value="all">All Stories</option>
               <option value="completed">Completed</option>
@@ -121,7 +118,7 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
 
           {/* Date Range */}
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label className="block text-xs font-medium text-text-primary mb-1">
               Created From
             </label>
             <input
@@ -130,12 +127,12 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
               onChange={(e) => onUpdateFilters({ 
                 dateRange: { ...filters.dateRange, start: e.target.value || null }
               })}
-              className="w-full px-3 py-2.5 border border-border-default rounded-lg bg-bg-primary text-text-primary focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+              className="w-full px-3 py-2 border border-border-default rounded-md bg-bg-primary text-text-primary focus:outline-none focus:border-devsuite-primary focus:ring-1 focus:ring-devsuite-primary/20 transition-all text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label className="block text-xs font-medium text-text-primary mb-1">
               Created To
             </label>
             <input
@@ -144,13 +141,13 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
               onChange={(e) => onUpdateFilters({ 
                 dateRange: { ...filters.dateRange, end: e.target.value || null }
               })}
-              className="w-full px-3 py-2.5 border border-border-default rounded-lg bg-bg-primary text-text-primary focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+              className="w-full px-3 py-2 border border-border-default rounded-md bg-bg-primary text-text-primary focus:outline-none focus:border-devsuite-primary focus:ring-1 focus:ring-devsuite-primary/20 transition-all text-sm"
             />
           </div>
 
           {/* Sprint Filter */}
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label className="block text-xs font-medium text-text-primary mb-1">
               Sprint
             </label>
             <select
@@ -158,7 +155,7 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
               onChange={(e) => onUpdateFilters({ 
                 sprints: e.target.value ? [e.target.value] : []
               })}
-              className="w-full px-3 py-2.5 border border-border-default rounded-lg bg-bg-primary text-text-primary focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+              className="w-full px-3 py-2 border border-border-default rounded-md bg-bg-primary text-text-primary focus:outline-none focus:border-devsuite-primary focus:ring-1 focus:ring-devsuite-primary/20 transition-all text-sm"
             >
               <option value="">All Sprints</option>
               <option value="priority">Priority Sprint</option>
@@ -166,68 +163,43 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
               <option value="backlog">Backlog</option>
             </select>
           </div>
+
+          {/* Tags Filter */}
+          <div>
+            <label className="block text-xs font-medium text-text-primary mb-1">
+              Tags
+            </label>
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={handleTagInput}
+              placeholder="Add tags..."
+              className="w-full px-3 py-2 border border-border-default rounded-md bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-1 focus:ring-devsuite-primary/20 transition-all text-sm"
+            />
+          </div>
         </div>
 
-        {/* Tags Filter */}
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-2">
-            Tags
-          </label>
-          
-          {/* Selected Tags */}
-          {filters.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {filters.tags.map(tag => (
-                <div
-                  key={tag}
-                  className="flex items-center gap-1 px-2 py-1 bg-devsuite-primary-subtle text-devsuite-primary rounded-full text-sm"
+        {/* Selected Tags Display */}
+        {filters.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {filters.tags.map(tag => (
+              <div
+                key={tag}
+                className="flex items-center gap-1 px-2 py-1 bg-devsuite-primary-subtle text-devsuite-primary rounded-full text-xs"
+              >
+                <Tag className="w-3 h-3" />
+                {tag}
+                <button
+                  onClick={() => removeTag(tag)}
+                  className="ml-1 hover:text-error transition-colors"
                 >
-                  <Tag className="w-3 h-3" />
-                  {tag}
-                  <button
-                    onClick={() => removeTag(tag)}
-                    className="ml-1 hover:text-error transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Tag Input */}
-          <input
-            type="text"
-            value={tagInput}
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={handleTagInput}
-            placeholder="Type a tag and press Enter..."
-            className="w-full px-3 py-2.5 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
-          />
-
-          {/* Preset Tags */}
-          {availableTags.length > 0 && (
-            <div className="mt-3">
-              <p className="text-xs text-text-tertiary mb-2">Popular tags:</p>
-              <div className="flex flex-wrap gap-1">
-                {availableTags.slice(0, 10).map(tag => (
-                  <button
-                    key={tag}
-                    onClick={() => addPresetTag(tag)}
-                    disabled={filters.tags.includes(tag)}
-                    className={`px-2 py-1 text-xs rounded-full transition-all ${
-                      filters.tags.includes(tag)
-                        ? 'bg-bg-muted text-text-disabled cursor-not-allowed'
-                        : 'bg-bg-muted text-text-secondary hover:bg-devsuite-primary-subtle hover:text-devsuite-primary'
-                    }`}
-                  >
-                    {tag}
-                  </button>
-                ))}
+                  <X className="w-3 h-3" />
+                </button>
               </div>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

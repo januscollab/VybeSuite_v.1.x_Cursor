@@ -461,6 +461,66 @@ export const useSupabaseStories = () => {
     }
   }, [generateStoryNumber, user, setOperationLoadingState]);
 
+  // Add new sprint
+  const addSprint = useCallback(async (title: string, icon: string, isBacklog: boolean, isDraggable: boolean) => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    const operationId = `add-sprint-${Date.now()}`;
+    setOperationLoadingState(operationId, true);
+
+    try {
+      // Get the highest position
+      const { data: existingSprints, error: positionError } = await supabase
+        .from('sprints')
+        .select('position')
+        .eq('user_id', user.id)
+        .is('archived_at', null)
+        .order('position', { ascending: false })
+        .limit(1);
+
+      if (positionError) throw positionError;
+
+      const nextPosition = existingSprints && existingSprints.length > 0 
+        ? existingSprints[0].position + 1 
+        : 0;
+
+      // Generate a unique ID for the sprint
+      const sprintId = `sprint-${Date.now()}`;
+
+      const newSprint = {
+        id: sprintId,
+        title,
+        icon,
+        is_backlog: isBacklog,
+        is_draggable: isDraggable,
+        position: nextPosition,
+        user_id: user.id
+      };
+
+      const { data, error } = await supabase
+        .from('sprints')
+        .insert([newSprint])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('Sprint added successfully:', data);
+      
+      // Real-time subscription will handle the update
+
+      return data;
+    } catch (err) {
+      console.error('Error adding sprint:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add sprint');
+      throw err;
+    } finally {
+      setOperationLoadingState(operationId, false);
+    }
+  }, [user, setOperationLoadingState]);
+
   // Enhanced toggle story with better error handling
   const toggleStory = useCallback(async (storyId: string) => {
     const operationId = `toggle-story-${storyId}`;
@@ -720,6 +780,7 @@ export const useSupabaseStories = () => {
     error,
     operationLoading,
     addStory,
+    addSprint,
     toggleStory,
     moveStory,
     closeSprint,

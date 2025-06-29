@@ -218,7 +218,7 @@ export const useArchive = () => {
       if (sprintsError) throw sprintsError;
 
       // Load archived stories
-      const { data: archivedStories, error: storiesError } = await supabase
+      const { data: allArchivedStories, error: storiesError } = await supabase
         .from('stories')
         .select('*')
         .not('archived_at', 'is', null)
@@ -226,34 +226,8 @@ export const useArchive = () => {
 
       if (storiesError) throw storiesError;
 
-      // Transform data
-      const transformedSprints: Sprint[] = (archivedSprints || []).map(sprint => ({
-        id: sprint.id,
-        title: sprint.title,
-        icon: sprint.icon,
-        isBacklog: sprint.is_backlog,
-        isDraggable: sprint.is_draggable,
-        archivedAt: sprint.archived_at,
-        stories: (archivedStories || [])
-          .filter(story => story.sprint_id === sprint.id)
-          .map(story => ({
-            id: story.id,
-            number: story.number,
-            title: story.title,
-            description: story.description || '',
-            completed: story.completed,
-            date: story.date,
-            tags: story.tags || [],
-            sprintId: story.sprint_id,
-            createdAt: story.created_at,
-            updatedAt: story.updated_at,
-            archivedAt: story.archived_at
-          }))
-      }));
-
-      // Also get orphaned archived stories (stories archived without their sprint)
-      const orphanedStories: Story[] = (archivedStories || [])
-        .filter(story => !archivedSprints?.find(sprint => sprint.id === story.sprint_id))
+      // Return all archived stories as a flat array
+      const allStories: Story[] = (allArchivedStories || [])
         .map(story => ({
           id: story.id,
           number: story.number,
@@ -269,8 +243,8 @@ export const useArchive = () => {
         }));
 
       return {
-        sprints: transformedSprints,
-        orphanedStories
+        sprints: [], // No longer displaying sprints in archive
+        orphanedStories: allStories
       };
     } catch (err) {
       console.error('Error loading archived data:', err);
