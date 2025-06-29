@@ -87,6 +87,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     return AI_PROVIDERS.find(p => p.id === providerId)?.models || [];
   };
 
+  const getConnectionStatus = (provider: 'openai' | 'anthropic') => {
+    if (testingConnections[provider]) {
+      return <Loader2 className="w-3 h-3 animate-spin text-text-quaternary" />;
+    }
+    if (connectionResults[provider] === true) {
+      return <div className="w-2 h-2 bg-success rounded-full"></div>;
+    }
+    if (connectionResults[provider] === false) {
+      return <div className="w-2 h-2 bg-error rounded-full"></div>;
+    }
+    return null;
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -100,270 +113,222 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     >
       <div className="bg-bg-primary rounded-xl shadow-devsuite-modal border border-border-default w-full max-w-[600px] max-h-[95vh] overflow-hidden">
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-border-default relative">
-          <h1 className="text-2xl font-bold text-text-primary mb-0">AI Settings</h1>
-          <p className="text-base text-text-tertiary leading-6">Configure your AI providers and API keys</p>
+        <div className="px-8 py-6 border-b border-border-default relative">
+          <h1 className="text-2xl font-bold text-text-primary mb-2">AI Configuration</h1>
+          <p className="text-text-tertiary">Configure your AI providers and manage API credentials</p>
           <button
             onClick={onClose}
-            className="absolute top-3 right-5 w-8 h-8 border-none bg-transparent cursor-pointer rounded-md flex items-center justify-center text-text-quaternary hover:bg-bg-canvas hover:text-text-secondary transition-all"
+            className="absolute top-6 right-8 w-6 h-6 border-none bg-transparent cursor-pointer rounded-md flex items-center justify-center text-text-quaternary hover:text-text-secondary transition-all"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="px-6 py-4 overflow-y-auto max-h-[calc(95vh-140px)]">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="px-8 py-6 overflow-y-auto max-h-[calc(95vh-180px)]">
+          <form onSubmit={handleSubmit} className="space-y-8">
             {/* Security Warning */}
             <div className="bg-warning-light border border-warning rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <div className="w-5 h-5 text-warning-dark mt-0.5">⚠️</div>
+                <div className="w-5 h-5 text-warning-dark mt-0.5">🔒</div>
                 <div>
-                  <h3 className="font-semibold text-warning-dark text-sm mb-1">Security Notice</h3>
-                  <p className="text-warning-dark text-xs leading-relaxed">
-                    API keys are stored locally in your browser. For production use, consider implementing a backend proxy to keep your keys secure.
+                  <h3 className="font-semibold text-warning-dark text-sm mb-1">Security Notice:</h3>
+                  <p className="text-warning-dark text-sm leading-relaxed">
+                    API keys are stored locally in your browser. For production environments, consider implementing a secure backend proxy to protect your credentials.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Default Provider Selection */}
+            {/* Default AI Provider Section */}
             <div>
-              <label className="block font-semibold text-[13px] mb-2 text-text-primary">
-                Default AI Provider
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {AI_PROVIDERS.map((provider) => (
-                  <label
-                    key={provider.id}
-                    className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.defaultProvider === provider.id
-                        ? 'border-devsuite-primary bg-devsuite-primary-subtle'
-                        : 'border-border-default bg-bg-primary hover:border-border-interactive'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="defaultProvider"
-                      value={provider.id}
-                      checked={formData.defaultProvider === provider.id}
-                      onChange={(e) => setFormData(prev => ({ 
-                        ...prev, 
-                        defaultProvider: e.target.value as 'openai' | 'anthropic' 
-                      }))}
-                      className="sr-only"
-                    />
-                    <div className={`w-4 h-4 border-2 rounded-full flex items-center justify-center ${
-                      formData.defaultProvider === provider.id
-                        ? 'border-devsuite-primary bg-devsuite-primary'
-                        : 'border-border-strong'
-                    }`}>
-                      {formData.defaultProvider === provider.id && (
-                        <div className="w-2 h-2 bg-text-inverse rounded-full"></div>
-                      )}
-                    </div>
-                    <span className="font-medium text-text-primary">{provider.name}</span>
-                  </label>
-                ))}
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-5 h-5 text-text-secondary">⚙️</div>
+                <h3 className="text-lg font-semibold text-text-primary">Default AI Provider</h3>
               </div>
-            </div>
-
-            {/* OpenAI Configuration */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg text-text-primary border-b border-border-subtle pb-2">
-                ChatGPT (OpenAI) Configuration
-              </h3>
               
-              {/* OpenAI API Key */}
-              <div>
-                <label htmlFor="openaiApiKey" className="block font-semibold text-[13px] mb-1 text-text-primary">
-                  OpenAI API Key
-                </label>
-                <div className="relative">
-                  <input
-                    id="openaiApiKey"
-                    type={showOpenAIKey ? 'text' : 'password'}
-                    value={formData.openaiApiKey}
-                    onChange={(e) => {
-                      setFormData(prev => ({ ...prev, openaiApiKey: e.target.value }));
-                      setConnectionResults(prev => ({ ...prev, openai: null }));
-                    }}
-                    placeholder="sk-..."
-                    className="w-full px-3 py-2.5 pr-20 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-mono"
-                  />
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-                    {connectionResults.openai !== null && (
-                      <div className="flex items-center">
-                        {connectionResults.openai ? (
-                          <CheckCircle className="w-4 h-4 text-success" />
-                        ) : (
-                          <XCircle className="w-4 h-4 text-error" />
-                        )}
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setShowOpenAIKey(!showOpenAIKey)}
-                      className="p-1 text-text-quaternary hover:text-text-secondary transition-colors"
-                    >
-                      {showOpenAIKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-1">
-                  <div className="text-[11px] text-text-tertiary">
-                    Get your API key from{' '}
-                    <a 
-                      href="https://platform.openai.com/api-keys" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-devsuite-primary hover:underline"
-                    >
-                      OpenAI Platform
-                    </a>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleTestConnection('openai')}
-                    disabled={!formData.openaiApiKey || testingConnections.openai}
-                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-text-secondary hover:text-devsuite-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {testingConnections.openai ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <CheckCircle className="w-3 h-3" />
-                    )}
-                    Test Connection
-                  </button>
-                </div>
-              </div>
-
-              {/* OpenAI Model Selection */}
-              <div>
-                <label htmlFor="openaiModel" className="block font-semibold text-[13px] mb-1 text-text-primary">
-                  ChatGPT Model
-                </label>
-                <select
-                  id="openaiModel"
-                  value={formData.selectedOpenAIModel}
-                  onChange={(e) => setFormData(prev => ({ ...prev, selectedOpenAIModel: e.target.value }))}
-                  className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] cursor-pointer appearance-none"
+              {/* Provider Selection Tabs */}
+              <div className="bg-bg-muted rounded-lg p-1 flex">
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, defaultProvider: 'openai' }))}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    formData.defaultProvider === 'openai'
+                      ? 'bg-bg-primary text-text-primary shadow-sm border border-border-subtle'
+                      : 'text-text-secondary hover:text-text-primary'
+                  }`}
                 >
-                  {getModels('openai').map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                </select>
+                  {getConnectionStatus('openai')}
+                  <span>ChatGPT</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, defaultProvider: 'anthropic' }))}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    formData.defaultProvider === 'anthropic'
+                      ? 'bg-bg-primary text-text-primary shadow-sm border border-border-subtle'
+                      : 'text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  {getConnectionStatus('anthropic')}
+                  <span>Claude</span>
+                </button>
               </div>
             </div>
 
-            {/* Anthropic Configuration */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg text-text-primary border-b border-border-subtle pb-2">
-                Claude (Anthropic) Configuration
-              </h3>
-              
-              {/* Anthropic API Key */}
+            {/* Dynamic Configuration Section */}
+            {formData.defaultProvider === 'anthropic' && (
               <div>
-                <label htmlFor="anthropicApiKey" className="block font-semibold text-[13px] mb-1 text-text-primary">
-                  Anthropic API Key
-                </label>
-                <div className="relative">
-                  <input
-                    id="anthropicApiKey"
-                    type={showAnthropicKey ? 'text' : 'password'}
-                    value={formData.anthropicApiKey}
-                    onChange={(e) => {
-                      setFormData(prev => ({ ...prev, anthropicApiKey: e.target.value }));
-                      setConnectionResults(prev => ({ ...prev, anthropic: null }));
-                    }}
-                    placeholder="sk-ant-..."
-                    className="w-full px-3 py-2.5 pr-20 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-mono"
-                  />
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-                    {connectionResults.anthropic !== null && (
-                      <div className="flex items-center">
-                        {connectionResults.anthropic ? (
-                          <CheckCircle className="w-4 h-4 text-success" />
-                        ) : (
-                          <XCircle className="w-4 h-4 text-error" />
-                        )}
-                      </div>
-                    )}
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="w-5 h-5 text-text-secondary">🤖</div>
+                  <h3 className="text-lg font-semibold text-text-primary">Claude Configuration</h3>
+                </div>
+                
+                {/* Anthropic API Key */}
+                <div className="mb-6">
+                  <label htmlFor="anthropicApiKey" className="block text-sm font-medium text-text-primary mb-2">
+                    Anthropic API Key
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="anthropicApiKey"
+                      type={showAnthropicKey ? 'text' : 'password'}
+                      value={formData.anthropicApiKey}
+                      onChange={(e) => {
+                        setFormData(prev => ({ ...prev, anthropicApiKey: e.target.value }));
+                        setConnectionResults(prev => ({ ...prev, anthropic: null }));
+                      }}
+                      placeholder="sk-ant-..."
+                      className="w-full px-3 py-3 pr-12 border border-border-default rounded-lg bg-bg-primary text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 placeholder-text-placeholder font-mono text-sm"
+                    />
                     <button
                       type="button"
                       onClick={() => setShowAnthropicKey(!showAnthropicKey)}
-                      className="p-1 text-text-quaternary hover:text-text-secondary transition-colors"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-text-quaternary hover:text-text-secondary transition-colors"
                     >
                       {showAnthropicKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                </div>
-                <div className="flex items-center justify-between mt-1">
-                  <div className="text-[11px] text-text-tertiary">
-                    Get your API key from{' '}
-                    <a 
-                      href="https://console.anthropic.com/" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-devsuite-primary hover:underline"
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs text-devsuite-primary">
+                      Get your API key from Anthropic Console
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleTestConnection('anthropic')}
+                      disabled={!formData.anthropicApiKey || testingConnections.anthropic}
+                      className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary border border-border-default rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Anthropic Console
-                    </a>
+                      🔍 Test Connection
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleTestConnection('anthropic')}
-                    disabled={!formData.anthropicApiKey || testingConnections.anthropic}
-                    className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-text-secondary hover:text-devsuite-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                </div>
+
+                {/* Anthropic Model Selection */}
+                <div>
+                  <label htmlFor="anthropicModel" className="block text-sm font-medium text-text-primary mb-2">
+                    Model
+                  </label>
+                  <select
+                    id="anthropicModel"
+                    value={formData.selectedAnthropicModel}
+                    onChange={(e) => setFormData(prev => ({ ...prev, selectedAnthropicModel: e.target.value }))}
+                    className="w-full px-3 py-3 border border-border-default rounded-lg bg-bg-primary text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 cursor-pointer appearance-none"
                   >
-                    {testingConnections.anthropic ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <CheckCircle className="w-3 h-3" />
-                    )}
-                    Test Connection
-                  </button>
+                    {getModels('anthropic').map((model) => (
+                      <option key={model} value={model}>
+                        {model}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
+            )}
 
-              {/* Anthropic Model Selection */}
+            {formData.defaultProvider === 'openai' && (
               <div>
-                <label htmlFor="anthropicModel" className="block font-semibold text-[13px] mb-1 text-text-primary">
-                  Claude Model
-                </label>
-                <select
-                  id="anthropicModel"
-                  value={formData.selectedAnthropicModel}
-                  onChange={(e) => setFormData(prev => ({ ...prev, selectedAnthropicModel: e.target.value }))}
-                  className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] cursor-pointer appearance-none"
-                >
-                  {getModels('anthropic').map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="w-5 h-5 text-text-secondary">🤖</div>
+                  <h3 className="text-lg font-semibold text-text-primary">ChatGPT Configuration</h3>
+                </div>
+                
+                {/* OpenAI API Key */}
+                <div className="mb-6">
+                  <label htmlFor="openaiApiKey" className="block text-sm font-medium text-text-primary mb-2">
+                    OpenAI API Key
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="openaiApiKey"
+                      type={showOpenAIKey ? 'text' : 'password'}
+                      value={formData.openaiApiKey}
+                      onChange={(e) => {
+                        setFormData(prev => ({ ...prev, openaiApiKey: e.target.value }));
+                        setConnectionResults(prev => ({ ...prev, openai: null }));
+                      }}
+                      placeholder="sk-..."
+                      className="w-full px-3 py-3 pr-12 border border-border-default rounded-lg bg-bg-primary text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 placeholder-text-placeholder font-mono text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOpenAIKey(!showOpenAIKey)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-text-quaternary hover:text-text-secondary transition-colors"
+                    >
+                      {showOpenAIKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs text-devsuite-primary">
+                      Get your API key from OpenAI Platform
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleTestConnection('openai')}
+                      disabled={!formData.openaiApiKey || testingConnections.openai}
+                      className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary border border-border-default rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      🔍 Test Connection
+                    </button>
+                  </div>
+                </div>
+
+                {/* OpenAI Model Selection */}
+                <div>
+                  <label htmlFor="openaiModel" className="block text-sm font-medium text-text-primary mb-2">
+                    Model
+                  </label>
+                  <select
+                    id="openaiModel"
+                    value={formData.selectedOpenAIModel}
+                    onChange={(e) => setFormData(prev => ({ ...prev, selectedOpenAIModel: e.target.value }))}
+                    className="w-full px-3 py-3 border border-border-default rounded-lg bg-bg-primary text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 cursor-pointer appearance-none"
+                  >
+                    {getModels('openai').map((model) => (
+                      <option key={model} value={model}>
+                        {model}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
+            )}
           </form>
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3 border-t border-border-default flex justify-end gap-3">
+        <div className="px-8 py-4 border-t border-border-default flex justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-1.5 px-4 py-2 bg-transparent text-text-secondary text-[13px] font-medium cursor-pointer border border-border-default rounded-lg transition-all hover:bg-bg-muted hover:text-text-primary"
+            className="px-4 py-2 text-sm font-medium text-text-secondary border border-border-default rounded-lg hover:bg-bg-muted hover:text-text-primary transition-all"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="flex items-center gap-1.5 px-4 py-2 bg-devsuite-primary text-text-inverse text-[13px] font-medium cursor-pointer border border-devsuite-primary rounded-lg transition-all hover:bg-devsuite-primary-hover"
+            className="flex items-center gap-2 px-4 py-2 bg-devsuite-primary text-text-inverse text-sm font-medium rounded-lg hover:bg-devsuite-primary-hover transition-all"
           >
-            Save Settings
+            💾 Save Configuration
           </button>
         </div>
       </div>
