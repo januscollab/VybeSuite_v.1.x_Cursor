@@ -190,7 +190,9 @@ function AppContent() {
   }
 
   const handleMoveSprint = (sprintId: string, newPosition: number) => {
-    moveSprint(sprintId, newPosition);
+    if (moveSprint) {
+      moveSprint(sprintId, newPosition);
+    }
   };
 
   return (
