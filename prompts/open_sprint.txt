@@ -4,7 +4,9 @@ Review and Provide a Build Plan for the following features for {sprintTitle} Spr
 ---STORY_ITEM_FORMAT_START---
 
 {storyNumber}: {storyTitle}
+
 Description: {storyDescription}
+
 ------------
 
 ---STORY_ITEM_FORMAT_END---
