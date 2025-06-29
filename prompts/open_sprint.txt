@@ -1,6 +1,11 @@
 Review and Provide a Build Plan for the following features for {sprintTitle} Sprint:
 
-{storyList}
+---STORY_ITEM_FORMAT_START--- 
+{storyNumber}: {storyTitle}
+Description: {storyDescription}
+------------
+
+---STORY_ITEM_FORMAT_END---)
 
 Prompt user with the following information and request permission to proceed prior to implementing any change
 1. A Complete Plan for implementing the above story changes
