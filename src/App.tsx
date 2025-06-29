@@ -102,7 +102,7 @@ function AppContent() {
   };
 
   const handleSubmitStory = (sprintId: string, title: string, description: string, tags: string[]) => {
-    addStory(sprintId, title, description, tags);
+    addStory(sprintId, { title, description, tags });
   };
 
   const handleOpenSprint = (sprintId: string) => {
