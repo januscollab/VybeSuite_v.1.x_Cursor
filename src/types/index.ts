@@ -97,3 +97,19 @@ export interface ExportData {
   exportedAt: string;
   filters?: SearchFilters;
 }
+
+export interface UserSettings {
+  id: string;
+  userId: string;
+  storyNumberPrefix: string;
+  preferredHomepage: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  settings: UserSettings;
+}

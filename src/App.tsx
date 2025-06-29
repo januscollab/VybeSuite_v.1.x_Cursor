@@ -8,6 +8,7 @@ import { AddStoryModal } from './components/AddStoryModal';
 import { SettingsModal } from './components/SettingsModal';
 import { OpenSprintModal } from './components/OpenSprintModal';
 import { AddSprintModal } from './components/AddSprintModal';
+import { ProfileSettingsModal } from './components/ProfileSettingsModal';
 import { PulsingDotsLoader } from './components/LoadingSpinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useSupabaseStories } from './hooks/useSupabaseStories';
@@ -27,6 +28,7 @@ function AppContent() {
   const [activeView, setActiveView] = useState<'active' | 'archive'>('active');
   const [aiSettings, setAISettings] = useState<AISettings>(loadAISettings());
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [profileSettingsModalOpen, setProfileSettingsModalOpen] = useState(false);
   const [addStoryModal, setAddStoryModal] = useState<{
     isOpen: boolean;
     sprintId: string;
@@ -75,6 +77,10 @@ function AppContent() {
 
   const handleOpenSettings = () => {
     setSettingsModalOpen(true);
+  };
+
+  const handleOpenProfileSettings = () => {
+    setProfileSettingsModalOpen(true);
   };
 
   const handleSaveAISettings = (newSettings: AISettings) => {
@@ -195,6 +201,7 @@ function AppContent() {
                 onViewChange={setActiveView}
                 onAddSprint={handleAddSprint}
                 onOpenSettings={handleOpenSettings}
+                onOpenProfileSettings={handleOpenProfileSettings}
               />
               
               {activeView === 'active' ? (
@@ -228,6 +235,11 @@ function AppContent() {
                 settings={aiSettings}
                 onClose={() => setSettingsModalOpen(false)}
                 onSave={handleSaveAISettings}
+              />
+
+              <ProfileSettingsModal
+                isOpen={profileSettingsModalOpen}
+                onClose={() => setProfileSettingsModalOpen(false)}
               />
 
               {openSprintModal.sprint && (

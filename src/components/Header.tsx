@@ -6,13 +6,15 @@ interface HeaderProps {
   onViewChange: (view: 'active' | 'archive') => void;
   onAddSprint: () => void;
   onOpenSettings: () => void;
+  onOpenProfileSettings: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   activeView,
   onViewChange,
   onAddSprint,
-  onOpenSettings
+  onOpenSettings,
+  onOpenProfileSettings
 }) => {
   return (
     <header className="bg-bg-primary border-b border-border-default sticky top-0 z-50 shadow-devsuite">
@@ -56,6 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
             <UserMenu 
               onAddSprint={onAddSprint}
               onOpenSettings={onOpenSettings}
+              onOpenProfileSettings={onOpenProfileSettings}
             />
           </nav>
         </div>

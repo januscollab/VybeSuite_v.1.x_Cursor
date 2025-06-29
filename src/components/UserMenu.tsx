@@ -5,9 +5,10 @@ import { useAuth } from '../contexts/AuthContext';
 interface UserMenuProps {
   onAddSprint: () => void;
   onOpenSettings: () => void;
+  onOpenProfileSettings: () => void;
 }
 
-export const UserMenu: React.FC<UserMenuProps> = ({ onAddSprint, onOpenSettings }) => {
+export const UserMenu: React.FC<UserMenuProps> = ({ onAddSprint, onOpenSettings, onOpenProfileSettings }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
 
@@ -23,6 +24,11 @@ export const UserMenu: React.FC<UserMenuProps> = ({ onAddSprint, onOpenSettings 
 
   const handleOpenSettings = () => {
     onOpenSettings();
+    setIsOpen(false);
+  };
+
+  const handleOpenProfileSettings = () => {
+    onOpenProfileSettings();
     setIsOpen(false);
   };
 
@@ -68,10 +74,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ onAddSprint, onOpenSettings 
           {/* Account Settings Section */}
           <div className="py-1">
             <button
-              onClick={() => {
-                console.log('Profile settings clicked');
-                setIsOpen(false);
-              }}
+              onClick={handleOpenProfileSettings}
               className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors"
             >
               <User className="w-4 h-4" />
@@ -96,7 +99,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ onAddSprint, onOpenSettings 
 
             <button
               onClick={() => {
-                console.log('Sprint settings clicked');
+                console.log('Sprint settings clicked'); // Placeholder for future feature
                 setIsOpen(false);
               }}
               className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors border-b border-border-subtle"
