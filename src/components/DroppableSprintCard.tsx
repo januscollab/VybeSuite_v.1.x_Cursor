@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Droppable } from '@hello-pangea/dnd';
-import { Plus, Play, FileText, GripVertical, Trash2, MoreVertical } from 'lucide-react';
+import { Plus, Play, FileText, GripVertical, Trash2 } from 'lucide-react';
 import { DraggableStory } from './DraggableStory';
 import { Story, SprintStats } from '../types';
 
@@ -36,9 +36,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
   onToggleStory
 }) => {
   const [showCloseDropdown, setShowCloseDropdown] = useState(false);
-  const [showMoreDropdown, setShowMoreDropdown] = useState(false);
   const [dropdownTimeout, setDropdownTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [moreDropdownTimeout, setMoreDropdownTimeout] = useState<NodeJS.Timeout | null>(null);
 
   const handleMouseEnterClose = () => {
     if (dropdownTimeout) {
@@ -55,21 +53,6 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
     setDropdownTimeout(timeout);
   };
 
-  const handleMouseEnterMore = () => {
-    if (moreDropdownTimeout) {
-      clearTimeout(moreDropdownTimeout);
-      setMoreDropdownTimeout(null);
-    }
-    setShowMoreDropdown(true);
-  };
-
-  const handleMouseLeaveMore = () => {
-    const timeout = setTimeout(() => {
-      setShowMoreDropdown(false);
-    }, 150); // Small delay to prevent flickering
-    setMoreDropdownTimeout(timeout);
-  };
-
   const handleCloseSprint = (sprintId: string, type: 'completed' | 'all') => {
     console.log('Close Sprint clicked for sprint:', sprintId, 'type:', type);
     onCloseSprint(type);
@@ -83,7 +66,6 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
       );
       if (confirmed) {
         onDeleteSprint();
-        setShowMoreDropdown(false);
       }
     }
   };
@@ -91,15 +73,15 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
   const isSprintLoading = operationLoading[`close-sprint-${id}`];
   const isDeleteLoading = operationLoading[`delete-sprint-${id}`];
   const isPrioritySprint = id === 'priority';
-  const isBacklogSprint = isBacklog;
+  const isBacklogSprint = id === 'backlog' || isBacklog;
   const isUserGeneratedSprint = !isPrioritySprint && !isBacklogSprint;
 
   return (
-    <div className={`bg-bg-primary border rounded-xl p-6 shadow-devsuite transition-all hover:shadow-devsuite-hover hover:border-border-strong ${
+    <div className={`bg-bg-primary border rounded-xl p-6 shadow-devsuite transition-all hover:shadow-devsuite-hover hover:border-border-strong relative ${
       isPrioritySprint 
         ? 'border-devsuite-primary border-2 bg-gradient-to-br from-bg-primary to-devsuite-primary-subtle' 
         : isBacklogSprint
-        ? 'border-devsuite-secondary border-2 bg-gradient-to-br from-bg-primary to-devsuite-secondary-subtle'
+        ? 'border-devsuite-primary border-2 bg-gradient-to-br from-bg-primary to-devsuite-primary-subtle'
         : 'border-border-default'
     } ${
       isBacklog ? 'col-span-full' : ''
@@ -115,7 +97,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
             <h3 className={`font-semibold text-lg ${
               isPrioritySprint ? 'text-devsuite-primary' : 'text-text-primary'
             } ${
-              isBacklogSprint ? 'text-devsuite-secondary' : ''
+              isBacklogSprint ? 'text-devsuite-primary' : ''
             }`}>
               {title}
             </h3>
@@ -205,43 +187,20 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
               </div>
             )}
           </div>
-          {/* User-generated sprint actions */}
-          {isUserGeneratedSprint && (
-            <div className="relative">
-              <button
-                onMouseEnter={handleMouseEnterMore}
-                onMouseLeave={handleMouseLeaveMore}
-                disabled={isDeleteLoading}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary disabled:hover:bg-transparent disabled:hover:text-text-secondary"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
-
-              {showMoreDropdown && (
-                <div 
-                  className="absolute top-full right-0 mt-1 bg-bg-primary border border-border-default rounded-lg shadow-devsuite-hover z-50 min-w-44 overflow-hidden"
-                  onMouseEnter={handleMouseEnterMore}
-                  onMouseLeave={handleMouseLeaveMore}
-                >
-                  <button
-                    onClick={handleDeleteSprint}
-                    disabled={isDeleteLoading || stories.length > 0}
-                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:text-text-disabled disabled:hover:bg-transparent disabled:hover:text-text-disabled text-error hover:bg-error-light hover:text-error-dark"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete Sprint
-                  </button>
-                  {stories.length > 0 && (
-                    <div className="px-3 py-2 text-xs text-text-tertiary border-t border-border-subtle">
-                      Move or archive all stories before deleting
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Delete Button - Bottom Left for User-Generated Sprints */}
+      {isUserGeneratedSprint && (
+        <button
+          onClick={handleDeleteSprint}
+          disabled={isDeleteLoading || stories.length > 0}
+          title={stories.length > 0 ? "Move or archive all stories before deleting" : "Delete sprint"}
+          className="absolute bottom-3 left-3 w-8 h-8 bg-error text-text-inverse rounded-full flex items-center justify-center transition-all hover:bg-error-dark disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-error shadow-sm"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
 
       {/* Stories - Droppable Area */}
       <Droppable droppableId={id}>
