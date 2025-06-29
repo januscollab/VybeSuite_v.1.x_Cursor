@@ -123,7 +123,12 @@ Return a JSON response with exactly this structure:
 Make the title follow proper user story format. Include detailed acceptance criteria and technical requirements in the description. Suggest 3-5 relevant tags.`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // Use proxy in development, direct API in production
+    const apiUrl = import.meta.env.DEV 
+      ? '/api/anthropic/v1/messages'
+      : 'https://api.anthropic.com/v1/messages';
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'x-api-key': apiKey,
