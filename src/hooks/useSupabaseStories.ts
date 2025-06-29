@@ -117,6 +117,45 @@ export const useSupabaseStories = () => {
           if (fixPositionError) throw fixPositionError;
         }
       }
+      // Always ensure default sprints exist with correct properties using upsert
+      const defaultSprints = [
+        {
+          id: 'priority',
+          title: 'Priority Sprint',
+          icon: '🔥',
+          is_backlog: false,
+          is_draggable: false,
+          position: 0,
+          user_id: user.id,
+          archived_at: null // Ensure it's not archived
+        },
+        {
+          id: 'development',
+          title: 'Development Sprint',
+          icon: '⚡',
+          is_backlog: false,
+          is_draggable: true,
+          position: 1,
+          user_id: user.id,
+          archived_at: null // Ensure it's not archived
+        },
+        {
+          id: 'backlog',
+          title: 'Backlog - Future Enhancements',
+          icon: '📋',
+          is_backlog: true,
+          is_draggable: false,
+          position: 2,
+          user_id: user.id,
+          archived_at: null // Ensure it's not archived
+        }
+      ];
+
+      const { error: upsertError } = await supabase
+        .from('sprints')
+        .upsert(defaultSprints, { onConflict: 'id' });
+
+      if (upsertError) throw upsertError;
 
       // Load all data
       await loadData();
