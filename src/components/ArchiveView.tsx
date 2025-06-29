@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Archive, RotateCcw, Trash2, Download } from 'lucide-react';
 import { useArchive } from '../hooks/useArchive';
+import { useSupabaseStories } from '../hooks/useSupabaseStories';
 import { useBulkActions } from '../hooks/useBulkActions';
 import { useSearch } from '../hooks/useSearch';
 import { PulsingDotsLoader } from './LoadingSpinner';
@@ -23,6 +24,8 @@ export const ArchiveView: React.FC = () => {
     restoreStories,
     getArchiveStats 
   } = useArchive();
+
+  const { moveStory } = useSupabaseStories();
 
   const {
     selectedStories,
@@ -77,25 +80,41 @@ export const ArchiveView: React.FC = () => {
   };
 
   const handleRestoreStories = async (storyIds: string[]) => {
-    const success = await restoreStories(storyIds);
-    if (success) {
-      await loadData();
-      await loadStats();
-      clearSelection();
+    try {
+      // First restore the stories from archive
+      const success = await restoreStories(storyIds);
+      if (success) {
+        // Then move each restored story to the Priority Sprint
+        for (const storyId of storyIds) {
+          await moveStory(storyId, 'priority');
+        }
+        
+        await loadData();
+        await loadStats();
+        clearSelection();
+      }
+    } catch (error) {
+      console.error('Error in restore and move operation:', error);
     }
   };
 
   const handleBulkRestore = async () => {
     if (selectedStories.length === 0) return;
     
-    const success = await executeBulkAction({
-      type: 'restore',
-      storyIds: selectedStories
-    });
-    
-    if (success) {
+    try {
+      // Restore each story individually and move to Priority Sprint
+      for (const storyId of selectedStories) {
+        const success = await restoreStories([storyId]);
+        if (success) {
+          await moveStory(storyId, 'priority');
+        }
+      }
+      
       await loadData();
       await loadStats();
+      clearSelection();
+    } catch (error) {
+      console.error('Error in bulk restore and move operation:', error);
     }
   };
 
@@ -128,11 +147,19 @@ export const ArchiveView: React.FC = () => {
   };
 
   const handleRestoreFromDetail = async (storyId: string) => {
-    const success = await restoreStories([storyId]);
-    if (success) {
-      await loadData();
-      await loadStats();
-      setSelectedStoryForDetail(null);
+    try {
+      // First restore the story from archive
+      const success = await restoreStories([storyId]);
+      if (success) {
+        // Then move the restored story to the Priority Sprint
+        await moveStory(storyId, 'priority');
+        
+        await loadData();
+        await loadStats();
+        setSelectedStoryForDetail(null);
+      }
+    } catch (error) {
+      console.error('Error in restore and move operation:', error);
     }
   };
 
