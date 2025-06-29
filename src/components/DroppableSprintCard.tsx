@@ -4,6 +4,7 @@ import { Droppable } from '@hello-pangea/dnd';
 import { validateSprintLayout } from '../constants/layout';
 import { Plus, Play, FileText, GripVertical, Trash2 } from 'lucide-react';
 import { DraggableStory } from './DraggableStory';
+import { DeleteSprintConfirmation } from './DeleteSprintConfirmation';
 import { Story, SprintStats } from '../types';
 
 interface DroppableSprintCardProps {
@@ -41,6 +42,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
 }) => {
   const [showCloseDropdown, setShowCloseDropdown] = useState(false);
   const [dropdownTimeout, setDropdownTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   const handleMouseEnterClose = () => {
     if (dropdownTimeout) {
@@ -64,14 +66,18 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
   };
 
   const handleDeleteSprint = () => {
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleConfirmDelete = () => {
+    setShowDeleteConfirmation(false);
     if (onDeleteSprint) {
-      const confirmed = window.confirm(
-        `Are you sure you want to delete "${title}"? This action cannot be undone.`
-      );
-      if (confirmed) {
-        onDeleteSprint();
-      }
+      onDeleteSprint();
     }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirmation(false);
   };
 
   const isSprintLoading = operationLoading[`close-sprint-${id}`];
@@ -249,6 +255,14 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
           </div>
         )}
       </Droppable>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteSprintConfirmation
+        isOpen={showDeleteConfirmation}
+        sprintTitle={title}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 };
