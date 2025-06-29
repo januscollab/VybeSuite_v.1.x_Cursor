@@ -86,8 +86,56 @@ export const useSupabaseStories = () => {
     setOperationLoading(prev => ({ ...prev, [operationId]: true }));
 
     try {
-      // Generate story number
-      const { data: lastStory } = await supabase
+      // Generate unique story number with retry logic
+      let newNumber: string;
+      let attempts = 0;
+      const maxAttempts = 5;
+      
+      do {
+        const { data: lastStory, error: fetchError } = await supabase
+          .from('stories')
+          .select('number')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (fetchError) throw fetchError;
+
+        let lastNumber = 0;
+        if (lastStory?.[0]?.number) {
+          // Extract numeric part from format like "STORY-001"
+          const match = lastStory[0].number.match(/(\d+)$/);
+          if (match) {
+            lastNumber = parseInt(match[1], 10);
+          }
+        }
+        
+        // Add random offset to prevent collisions in concurrent requests
+        const offset = attempts > 0 ? Math.floor(Math.random() * 10) + 1 : 1;
+        newNumber = `STORY-${String(lastNumber + offset).padStart(3, '0')}`;
+        
+        // Check if this number already exists
+        const { data: existingStory } = await supabase
+          .from('stories')
+          .select('id')
+          .eq('number', newNumber)
+          .single();
+        
+        if (!existingStory) {
+          break; // Number is unique, we can use it
+        }
+        
+        attempts++;
+      } while (attempts < maxAttempts);
+      
+      if (attempts >= maxAttempts) {
+        // Fallback to timestamp-based number
+        newNumber = `STORY-${Date.now().toString().slice(-6)}`;
+      }
+
+      // Validate required fields
+      if (!storyData.title || storyData.title.trim() === '') {
+        throw new Error('Story title is required');
+      }
         .from('stories')
         .select('number')
         .order('created_at', { ascending: false })
@@ -130,6 +178,7 @@ export const useSupabaseStories = () => {
         .single();
 
       if (error) throw error;
+        console.error('Supabase insert error:', error);
 
       // Update local state
       setSprints(prev => prev.map(sprint => 
@@ -155,7 +204,15 @@ export const useSupabaseStories = () => {
       ));
     } catch (err) {
       console.error('Error adding story:', err);
-      setError(err instanceof Error ? err.message : 'Failed to add story');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add story';
+      setError(errorMessage);
+      
+      // Show user-friendly error for common issues
+      if (errorMessage.includes('duplicate key')) {
+        setError('Story number conflict. Please try again.');
+      } else if (errorMessage.includes('not-null constraint')) {
+        setError('Missing required story information. Please check all fields.');
+      }
     } finally {
       setOperationLoading(prev => {
         const { [operationId]: _, ...rest } = prev;
@@ -331,6 +388,10 @@ export const useSupabaseStories = () => {
           .limit(1);
 
         position = (lastStoryInSprint?.[0]?.position || 0) + 1;
+      }
+
+      if (!data) {
+        throw new Error('No data returned from insert operation');
       }
 
       const { error } = await supabase
