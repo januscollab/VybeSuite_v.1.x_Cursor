@@ -52,6 +52,7 @@ export const useSupabaseStories = () => {
           console.log('Backlog sprint unarchived successfully');
         }
         // If backlog exists and is not archived, do nothing
+        return;
       } else {
         // If backlog doesn't exist, create it
         // Get the highest position to place backlog at the end
