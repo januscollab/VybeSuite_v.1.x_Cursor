@@ -374,7 +374,6 @@ export const useSupabaseStories = () => {
       const { data, error } = await supabase
         .from('stories')
         .select('number')
-        .is('archived_at', null)
         .order('created_at', { ascending: false })
         .limit(1);
 
