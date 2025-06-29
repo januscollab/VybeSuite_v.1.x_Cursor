@@ -432,6 +432,7 @@ export const useSupabaseStories = () => {
       const { data, error } = await supabase
         .from('sprints')
         .insert({
+         id: crypto.randomUUID(),
           title,
           description: description || '',
           icon: icon || '📋',
