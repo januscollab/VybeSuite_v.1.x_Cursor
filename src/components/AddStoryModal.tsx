@@ -247,7 +247,12 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
                 value={storyPrompt}
                 onChange={(e) => setStoryPrompt(e.target.value)}
                 placeholder="Describe what you want to build... (e.g., 'Create a user login form with email validation')"
-                className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit resize-none min-h-[80px]"
+                className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit resize min-h-[80px] max-h-[300px]"
+                style={{
+                  resize: 'both',
+                  minWidth: '100%',
+                  maxWidth: '100%'
+                }}
               />
               
               {/* Generation Error */}
@@ -266,18 +271,10 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
                     type="button"
                     onClick={handleGenerateStory}
                     disabled={isGenerating || !hasValidApiKey(selectedProvider)}
-                    className="generate-story-button flex items-center gap-1 px-2.5 py-1.5 bg-transparent text-devsuite-primary text-xs font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all hover:bg-devsuite-primary/10 disabled:opacity-50 disabled:cursor-not-allowed min-h-[32px]"
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-devsuite-primary text-text-inverse text-xs font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all hover:bg-devsuite-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isGenerating ? (
-                      <div className="generate-button-loading">
-                        <RobotRunner message="AI Robot generating story..." />
-                      </div>
-                    ) : (
-                      <>
-                        <Star className="w-3.5 h-3.5" />
-                        <span>Generate with {getProviderName(selectedProvider)}</span>
-                      </>
-                    )}
+                    <Sparkles className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+                    {isGenerating ? 'Generating...' : `Generate with ${getProviderName(selectedProvider)}`}
                   </button>
                   
                   <button
@@ -409,16 +406,16 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-1.5 px-3 py-2 bg-transparent text-text-secondary text-[13px] font-medium cursor-pointer border-none rounded-md transition-all hover:bg-devsuite-primary/10 hover:text-devsuite-primary"
+            className="flex items-center gap-1.5 px-3 py-2 bg-transparent text-text-secondary text-[13px] font-medium cursor-pointer border border-border-default rounded-md transition-all hover:bg-bg-muted hover:text-text-primary"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={!formData.title.trim()}
-            className="flex items-center gap-1.5 px-3 py-2 bg-transparent text-text-secondary text-[13px] font-medium cursor-pointer border-none rounded-md transition-all hover:bg-devsuite-primary/10 hover:text-devsuite-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 px-3 py-2 bg-devsuite-primary text-text-inverse text-[13px] font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all hover:bg-devsuite-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Sparkles className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             Create Story
           </button>
         </div>

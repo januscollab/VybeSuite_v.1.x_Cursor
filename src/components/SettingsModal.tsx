@@ -160,7 +160,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div>
                   <h3 className="font-semibold text-warning-dark text-sm mb-1">Security Notice:</h3>
                   <p className="text-warning-dark text-sm leading-relaxed">
-                    API keys are stored locally in your browser. For production environments, consider implementing a secure backend proxy to protect your credentials.
+                    API keys are stored locally in your browser. For prod environments, consider a secure proxy to protect your credentials.
                   </p>
                 </div>
               </div>

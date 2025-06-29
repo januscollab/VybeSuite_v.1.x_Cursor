@@ -7,6 +7,7 @@ interface ArchiveStoryCardProps {
   isSelected: boolean;
   onToggleSelection: () => void;
   onRestore: () => void;
+  onViewDetails: () => void;
 }
 
 export const ArchiveStoryCard: React.FC<ArchiveStoryCardProps> = ({
@@ -14,18 +15,25 @@ export const ArchiveStoryCard: React.FC<ArchiveStoryCardProps> = ({
   isSelected,
   onToggleSelection,
   onRestore
+  onViewDetails
 }) => {
   return (
-    <div className={`bg-bg-primary border rounded-lg p-4 transition-all hover:shadow-sm ${
+    <div 
+      className={`bg-bg-primary border rounded-lg p-4 transition-all hover:shadow-sm cursor-pointer ${
       isSelected ? 'border-devsuite-primary bg-devsuite-primary-subtle' : 'border-border-default'
-    }`}>
+    }`}
+      onClick={onViewDetails}
+    >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={isSelected}
-            onChange={onToggleSelection}
+            onChange={(e) => {
+              e.stopPropagation();
+              onToggleSelection();
+            }}
             className="w-4 h-4 text-devsuite-primary border-border-strong rounded focus:ring-devsuite-primary focus:ring-2"
           />
           <span className="font-medium text-text-primary text-sm">{story.number}</span>
@@ -36,7 +44,10 @@ export const ArchiveStoryCard: React.FC<ArchiveStoryCardProps> = ({
           )}
         </div>
         <button
-          onClick={onRestore}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRestore();
+          }}
           className="p-1.5 text-text-quaternary hover:text-success hover:bg-success-light rounded-md transition-all"
           title="Restore story"
         >
