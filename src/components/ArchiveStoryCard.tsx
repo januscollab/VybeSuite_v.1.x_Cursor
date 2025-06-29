@@ -14,7 +14,7 @@ export const ArchiveStoryCard: React.FC<ArchiveStoryCardProps> = ({
   story,
   isSelected,
   onToggleSelection,
-  onRestore
+  onRestore,
   onViewDetails
 }) => {
   return (
