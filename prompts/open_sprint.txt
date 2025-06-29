@@ -16,5 +16,3 @@ Prompt user with the following information and request permission to proceed pri
 2. Potential challenges and risks to these changes and solutions to overcome
 
 On completion of changes please provide a full Completion Status Report for each story
-
-{statusList}
