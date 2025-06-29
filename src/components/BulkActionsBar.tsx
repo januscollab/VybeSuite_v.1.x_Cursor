@@ -1,6 +1,6 @@
 import React from 'react';
 import { Archive, RotateCcw, Trash2, Move, Tag, X } from 'lucide-react';
-import { LoadingSpinner } from './LoadingSpinner';
+import { PulsingDotsLoader } from './LoadingSpinner';
 
 interface BulkActionsBarProps {
   selectedCount: number;
@@ -40,7 +40,7 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
             </span>
           </div>
 
-          {loading && <LoadingSpinner size="sm" />}
+          {loading && <PulsingDotsLoader size="sm" />}
         </div>
 
         <div className="flex items-center gap-2">

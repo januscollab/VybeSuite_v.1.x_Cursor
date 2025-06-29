@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { PulsingDotsLoader } from './LoadingSpinner';
 
 export const AuthPage: React.FC = () => {
   const [mode, setMode] = useState<'signin' | 'signup' | 'reset'>('signin');
@@ -98,7 +99,7 @@ export const AuthPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-bg-canvas flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-devsuite-primary mx-auto mb-4" />
+          <PulsingDotsLoader size="lg" className="mx-auto mb-4" />
           <p className="text-text-secondary">Loading...</p>
         </div>
       </div>

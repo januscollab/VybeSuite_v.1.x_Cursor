@@ -58,7 +58,7 @@ export const useSearch = () => {
 
       // Apply text search
       if (searchFilters.query.trim()) {
-        storyQuery = storyQuery.textSearch('search_vector', searchFilters.query.trim());
+        storyQuery = storyQuery.textSearch('search_vector', searchFilters.query.trim(), { type: 'plain' });
       }
 
       // Apply status filter
@@ -204,6 +204,9 @@ export const useSearch = () => {
     
     if (filters.dateRange.start || filters.dateRange.end) {
       summary.push('date range');
+    } else {
+      // When no date range is specified, indicate all-time search
+      summary.push('all time');
     }
 
     return summary;

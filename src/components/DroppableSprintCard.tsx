@@ -61,7 +61,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
 
   const handleCloseSprint = (sprintId: string, type: 'completed' | 'all') => {
     console.log('Close Sprint clicked for sprint:', sprintId, 'type:', type);
-    onCloseSprint(type);
+    onCloseSprint(sprintId, type);
     setShowCloseDropdown(false);
   };
 
@@ -121,13 +121,9 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
             )}
             {isBacklogSprint && (
               <span className="px-2 py-0.5 bg-devsuite-secondary text-text-inverse text-xs font-medium rounded-full">
-                BACKLOG
+                FUTURE ENHANCEMENTS
               </span>
             )}
-            {/* Width indicator for development/debugging */}
-            <span className="px-2 py-0.5 bg-bg-muted text-text-quaternary text-xs font-medium rounded-full">
-              {layoutRules.width}
-            </span>
           </div>
           
           <div className="flex gap-4 text-sm text-text-tertiary">
@@ -169,7 +165,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
             <button
               onMouseEnter={handleMouseEnterClose}
               onMouseLeave={handleMouseLeaveClose}
-              disabled={isSprintLoading || isPrioritySprint}
+              disabled={isSprintLoading}
               className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary disabled:hover:bg-transparent disabled:hover:text-text-secondary"
             >
               <FileText className="w-4 h-4" />
@@ -177,7 +173,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
               <span className="text-xs">▼</span>
             </button>
 
-            {showCloseDropdown && !isPrioritySprint && (
+            {showCloseDropdown && (
               <div 
                 className="absolute top-full right-0 mt-1 bg-bg-primary border border-border-default rounded-lg shadow-devsuite-hover z-50 min-w-44 overflow-hidden"
                 onMouseEnter={handleMouseEnterClose}

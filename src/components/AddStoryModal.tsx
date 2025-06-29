@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, AlertCircle, Plus } from 'lucide-react';
+import { X, Sparkles, AlertCircle, Plus, Star } from 'lucide-react';
 import { AddStoryFormData, AISettings } from '../types';
 import { generateStory, AIServiceError } from '../utils/aiService';
 import { AI_PROVIDERS } from '../constants/ai';
@@ -153,9 +153,25 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
     return apiKey && apiKey.trim().length > 0;
   };
 
+  // Robot Running Animation Component
+  const RobotRunner = ({ message = "Generating story..." }) => (
+    <div className="robot-container">
+      <div className="robot-runner">
+        <div className="robot-head-run"></div>
+        <div className="robot-body"></div>
+        <div className="robot-leg left"></div>
+        <div className="robot-leg right"></div>
+        <div className="robot-arm left"></div>
+        <div className="robot-arm right"></div>
+      </div>
+      <div className="robot-message">{message}</div>
+    </div>
+  );
+
   if (!isOpen) return null;
 
   return (
+    <>
     <div 
       className="fixed inset-0 bg-bg-overlay z-50 flex items-center justify-center p-5"
       onClick={(e) => {
@@ -231,7 +247,12 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
                 value={storyPrompt}
                 onChange={(e) => setStoryPrompt(e.target.value)}
                 placeholder="Describe what you want to build... (e.g., 'Create a user login form with email validation')"
-                className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit resize-none min-h-[80px]"
+                className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit resize min-h-[80px] max-h-[300px]"
+                style={{
+                  resize: 'both',
+                  minWidth: '100%',
+                  maxWidth: '100%'
+                }}
               />
               
               {/* Generation Error */}
@@ -250,7 +271,7 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
                     type="button"
                     onClick={handleGenerateStory}
                     disabled={isGenerating || !hasValidApiKey(selectedProvider)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 bg-transparent text-devsuite-primary text-xs font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all hover:bg-devsuite-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-devsuite-primary text-text-inverse text-xs font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all hover:bg-devsuite-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Sparkles className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
                     {isGenerating ? 'Generating...' : `Generate with ${getProviderName(selectedProvider)}`}
@@ -289,6 +310,41 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
               />
               <div className="text-[11px] text-text-tertiary mt-0.5">
                 Provide detailed requirements, acceptance criteria, and any additional context
+              </div>
+            </div>
+
+            {/* Tags */}
+            <div className="mb-3">
+              <label htmlFor="tags" className="block font-semibold text-[13px] mb-1 text-text-primary">
+                Tags
+              </label>
+              <div className="border-2 border-border-default rounded-lg bg-bg-primary p-1.5 min-h-[40px] flex flex-wrap gap-1.5 items-start transition-all focus-within:border-devsuite-primary focus-within:shadow-[0_0_0_3px_rgba(252,128,25,0.1)]">
+                {formData.tags.map((tag) => (
+                  <div
+                    key={tag}
+                    className="bg-devsuite-primary-subtle text-devsuite-primary px-2 py-1 rounded-2xl text-xs font-medium flex items-center gap-1"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="bg-transparent border-none text-devsuite-primary cursor-pointer p-0 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[10px] leading-none hover:bg-devsuite-primary hover:text-white"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={handleTagInput}
+                  placeholder="Add tags (press Enter to add)..."
+                  className="border-none outline-none bg-transparent flex-1 min-w-[100px] p-1.5 text-[13px] text-text-primary placeholder-text-placeholder"
+                />
+              </div>
+              <div className="text-[11px] text-text-tertiary mt-0.5">
+                Add relevant tags like frontend, backend, ui, api, etc.
               </div>
             </div>
 
@@ -342,41 +398,6 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
                 </div>
               </div>
             </div>
-
-            {/* Tags */}
-            <div className="mb-3">
-              <label htmlFor="tags" className="block font-semibold text-[13px] mb-1 text-text-primary">
-                Tags
-              </label>
-              <div className="border-2 border-border-default rounded-lg bg-bg-primary p-1.5 min-h-[40px] flex flex-wrap gap-1.5 items-start transition-all focus-within:border-devsuite-primary focus-within:shadow-[0_0_0_3px_rgba(252,128,25,0.1)]">
-                {formData.tags.map((tag) => (
-                  <div
-                    key={tag}
-                    className="bg-devsuite-primary-subtle text-devsuite-primary px-2 py-1 rounded-2xl text-xs font-medium flex items-center gap-1"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="bg-transparent border-none text-devsuite-primary cursor-pointer p-0 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[10px] leading-none hover:bg-devsuite-primary hover:text-white"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                <input
-                  type="text"
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={handleTagInput}
-                  placeholder="Add tags (press Enter to add)..."
-                  className="border-none outline-none bg-transparent flex-1 min-w-[100px] p-1.5 text-[13px] text-text-primary placeholder-text-placeholder"
-                />
-              </div>
-              <div className="text-[11px] text-text-tertiary mt-0.5">
-                Add relevant tags like frontend, backend, ui, api, etc.
-              </div>
-            </div>
           </form>
         </div>
 
@@ -385,20 +406,124 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-1.5 px-3 py-2 bg-transparent text-text-secondary text-[13px] font-medium cursor-pointer border-none rounded-md transition-all hover:bg-devsuite-primary/10 hover:text-devsuite-primary"
+            className="flex items-center gap-1.5 px-3 py-2 bg-transparent text-text-secondary text-[13px] font-medium cursor-pointer border border-border-default rounded-md transition-all hover:bg-bg-muted hover:text-text-primary"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={!formData.title.trim()}
-            className="flex items-center gap-1.5 px-3 py-2 bg-transparent text-text-secondary text-[13px] font-medium cursor-pointer border-none rounded-md transition-all hover:bg-devsuite-primary/10 hover:text-devsuite-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 px-3 py-2 bg-devsuite-primary text-text-inverse text-[13px] font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all hover:bg-devsuite-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Sparkles className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             Create Story
           </button>
         </div>
       </div>
     </div>
+
+    <style jsx>{`
+      /* Robot Running Animation for Generate Story */
+      .robot-runner {
+        position: relative;
+        width: 80px;
+        height: 60px;
+        animation: robot-run 2s ease-in-out infinite;
+      }
+
+      .robot-body {
+        position: absolute;
+        bottom: 20px;
+        left: 25px;
+        width: 30px;
+        height: 25px;
+        background: var(--devsuite-primary);
+        border-radius: 6px;
+      }
+
+      .robot-head-run {
+        position: absolute;
+        bottom: 40px;
+        left: 30px;
+        width: 20px;
+        height: 20px;
+        background: var(--devsuite-primary);
+        border-radius: 4px;
+      }
+
+      .robot-head-run::before {
+        content: '';
+        position: absolute;
+        top: 6px;
+        left: 4px;
+        width: 3px;
+        height: 3px;
+        background: var(--text-inverse);
+        border-radius: 50%;
+        box-shadow: 9px 0 0 var(--text-inverse);
+      }
+
+      .robot-leg {
+        position: absolute;
+        bottom: 5px;
+        width: 6px;
+        height: 18px;
+        background: var(--devsuite-primary);
+        border-radius: 3px;
+        animation: leg-move 0.8s ease-in-out infinite;
+      }
+
+      .robot-leg.left { left: 30px; }
+      .robot-leg.right { left: 44px; animation-delay: 0.4s; }
+
+      .robot-arm {
+        position: absolute;
+        bottom: 30px;
+        width: 4px;
+        height: 15px;
+        background: var(--devsuite-primary);
+        border-radius: 2px;
+        animation: arm-swing 0.8s ease-in-out infinite;
+      }
+
+      .robot-arm.left { left: 22px; }
+      .robot-arm.right { left: 54px; animation-delay: 0.4s; }
+
+      @keyframes robot-run {
+        0%, 100% { transform: translateX(-10px); }
+        50% { transform: translateX(10px); }
+      }
+
+      @keyframes leg-move {
+        0%, 100% { transform: rotate(20deg); }
+        50% { transform: rotate(-20deg); }
+      }
+
+      @keyframes arm-swing {
+        0%, 100% { transform: rotate(-30deg); }
+        50% { transform: rotate(30deg); }
+      }
+
+      .generate-button-loading {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        justify-content: center;
+      }
+
+      .robot-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .robot-message {
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+    `}</style>
+    </>
   );
 };

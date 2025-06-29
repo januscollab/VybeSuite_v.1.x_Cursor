@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Archive, RotateCcw, Trash2, Download, Search, Filter } from 'lucide-react';
+import { Archive, RotateCcw, Trash2, Download } from 'lucide-react';
 import { useArchive } from '../hooks/useArchive';
 import { useBulkActions } from '../hooks/useBulkActions';
 import { useSearch } from '../hooks/useSearch';
-import { LoadingSpinner } from './LoadingSpinner';
+import { PulsingDotsLoader } from './LoadingSpinner';
 import { SearchFilterPanel } from './SearchFilterPanel';
 import { BulkActionsBar } from './BulkActionsBar';
 import { ExportModal } from './ExportModal';
 import { ArchiveStoryCard } from './ArchiveStoryCard';
+import { StoryDetailModal } from './StoryDetailModal';
 import { Story } from '../types';
 
 export const ArchiveView: React.FC = () => {
   const [archivedStories, setArchivedStories] = useState<Story[]>([]);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [selectedStoryForDetail, setSelectedStoryForDetail] = useState<Story | null>(null);
 
   const { 
     loading: archiveLoading, 
@@ -117,6 +119,23 @@ export const ArchiveView: React.FC = () => {
     }
   };
 
+  const handleViewStoryDetails = (story: Story) => {
+    setSelectedStoryForDetail(story);
+  };
+
+  const handleCloseStoryDetails = () => {
+    setSelectedStoryForDetail(null);
+  };
+
+  const handleRestoreFromDetail = async (storyId: string) => {
+    const success = await restoreStories([storyId]);
+    if (success) {
+      await loadData();
+      await loadStats();
+      setSelectedStoryForDetail(null);
+    }
+  };
+
   const getDisplayData = () => {
     if (hasActiveFilters) {
       return searchResults.stories.filter(story => story.archivedAt);
@@ -131,7 +150,7 @@ export const ArchiveView: React.FC = () => {
     return (
       <div className="p-6 max-w-none mx-auto">
         <div className="flex items-center justify-center py-12">
-          <LoadingSpinner size="lg" className="mr-3" />
+          <PulsingDotsLoader size="lg" className="mr-3" />
           <span className="text-text-secondary">Loading archived items...</span>
         </div>
       </div>
@@ -177,6 +196,13 @@ export const ArchiveView: React.FC = () => {
         className="mb-6"
       />
 
+      {/* Story Detail Modal */}
+      <StoryDetailModal
+        isOpen={!!selectedStoryForDetail}
+        story={selectedStoryForDetail}
+        onClose={handleCloseStoryDetails}
+        onRestore={handleRestoreFromDetail}
+      />
       {/* Bulk Actions Bar */}
       {selectedStories.length > 0 && (
         <BulkActionsBar
@@ -232,6 +258,7 @@ export const ArchiveView: React.FC = () => {
                   isSelected={selectedStories.includes(story.id)}
                   onToggleSelection={() => toggleStorySelection(story.id)}
                   onRestore={() => handleRestoreStories([story.id])}
+                  onViewDetails={() => handleViewStoryDetails(story)}
                 />
               ))}
             </div>

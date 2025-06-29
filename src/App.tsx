@@ -8,7 +8,8 @@ import { AddStoryModal } from './components/AddStoryModal';
 import { SettingsModal } from './components/SettingsModal';
 import { OpenSprintModal } from './components/OpenSprintModal';
 import { AddSprintModal } from './components/AddSprintModal';
-import { LoadingSpinner } from './components/LoadingSpinner';
+import { ProfileSettingsModal } from './components/ProfileSettingsModal';
+import { PulsingDotsLoader } from './components/LoadingSpinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useSupabaseStories } from './hooks/useSupabaseStories';
 import { loadAISettings, saveAISettings } from './utils/aiSettings';
@@ -27,6 +28,7 @@ function AppContent() {
   const [activeView, setActiveView] = useState<'active' | 'archive'>('active');
   const [aiSettings, setAISettings] = useState<AISettings>(loadAISettings());
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [profileSettingsModalOpen, setProfileSettingsModalOpen] = useState(false);
   const [addStoryModal, setAddStoryModal] = useState<{
     isOpen: boolean;
     sprintId: string;
@@ -77,6 +79,10 @@ function AppContent() {
     setSettingsModalOpen(true);
   };
 
+  const handleOpenProfileSettings = () => {
+    setProfileSettingsModalOpen(true);
+  };
+
   const handleSaveAISettings = (newSettings: AISettings) => {
     setAISettings(newSettings);
     saveAISettings(newSettings);
@@ -102,7 +108,7 @@ function AppContent() {
   };
 
   const handleSubmitStory = (sprintId: string, title: string, description: string, tags: string[]) => {
-    addStory(sprintId, title, description, tags);
+    addStory(sprintId, { title, description, tags });
   };
 
   const handleOpenSprint = (sprintId: string) => {
@@ -150,7 +156,7 @@ function AppContent() {
           {loading && (
             <div className="min-h-screen bg-bg-canvas flex items-center justify-center">
               <div className="text-center">
-                <LoadingSpinner size="lg" className="mx-auto mb-4" />
+                <PulsingDotsLoader size="lg" className="mx-auto mb-4" />
                 <p className="text-text-secondary">Loading your sprint board...</p>
               </div>
             </div>
@@ -195,6 +201,7 @@ function AppContent() {
                 onViewChange={setActiveView}
                 onAddSprint={handleAddSprint}
                 onOpenSettings={handleOpenSettings}
+                onOpenProfileSettings={handleOpenProfileSettings}
               />
               
               {activeView === 'active' ? (
@@ -228,6 +235,11 @@ function AppContent() {
                 settings={aiSettings}
                 onClose={() => setSettingsModalOpen(false)}
                 onSave={handleSaveAISettings}
+              />
+
+              <ProfileSettingsModal
+                isOpen={profileSettingsModalOpen}
+                onClose={() => setProfileSettingsModalOpen(false)}
               />
 
               {openSprintModal.sprint && (

@@ -19,12 +19,6 @@ Description: [Description]"
 
 "Prompt user with the following information and request permission to proceed prior to implementing any change
 1. A Complete Plan for implementing the above story changes
-2. Potential challenges and risks to these changes and solutions to overcome"
+2. Potential challenges and risks to these changes and solutions to overcome
 
-// Inform the model that on completion of changes please provide a full Completion Status Report for each story in the format below in this format
-
-"## Sprint Completion Status Report:
-✅ [Story Number]: [Story Title]
-❌ [Story Number]: [Story Title]"
-
-//Update the status of the story appropriately with ✅ or ❌
+On completion provide a full Status Report for each story indicating whether it was completed or not"

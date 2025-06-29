@@ -69,9 +69,15 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
 
   // Sort sprints by position to ensure Priority Sprint is always first
   const sortedSprints = [...sprints].sort((a, b) => {
-    // Sort by position, with Priority Sprint always first, backlog always last
-    const aPos = a.id === 'priority' ? -1 : (a.isBacklog ? 1000 : (a.position || 0));
-    const bPos = b.id === 'priority' ? -1 : (b.isBacklog ? 1000 : (b.position || 0));
+    // Enhanced sorting: Priority Sprint first, then by position, Backlog always last
+    const getPriority = (sprint: Sprint) => {
+      if (sprint.id === 'priority') return -1000; // Always first
+      if (sprint.isBacklog) return 1000; // Always last
+      return sprint.position || 0; // Normal position for user sprints
+    };
+    
+    const aPos = getPriority(a);
+    const bPos = getPriority(b);
     return aPos - bPos;
   });
 
@@ -172,25 +178,27 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
         )}
 
         {/* 
-          BACKLOG SPRINT SECTION - FULL WIDTH (EXCEPTION TO 50% RULE)
-          The Backlog Sprint is the ONLY sprint that takes full width
-          It's always rendered last
+          FUTURE ENHANCEMENTS SPRINT (BACKLOG) - FULL WIDTH WITH TWO-COLUMN STORIES
+          This sprint is always positioned last and uses the full page width
+          Stories are displayed in a two-column layout for better visibility
         */}
         {backlogSprint && (
-          <DroppableSprintCard
-            id={backlogSprint.id}
-            title={backlogSprint.title}
-            icon={backlogSprint.icon}
-            stories={backlogSprint.stories}
-            stats={getSprintStats(backlogSprint.id)}
-            isBacklog={backlogSprint.isBacklog}
-            operationLoading={operationLoading}
-            onAddStory={() => onAddStory(backlogSprint.id)}
-            onOpenSprint={() => onOpenSprint(backlogSprint.id)}
-            onCloseSprint={(type) => onCloseSprint(backlogSprint.id, type)}
-            onDeleteSprint={() => onDeleteSprint(backlogSprint.id)}
-            onToggleStory={onToggleStory}
-          />
+          <div className="w-full">
+            <DroppableSprintCard
+              id={backlogSprint.id}
+              title={backlogSprint.title}
+              icon={backlogSprint.icon}
+              stories={backlogSprint.stories}
+              stats={getSprintStats(backlogSprint.id)}
+              isBacklog={backlogSprint.isBacklog}
+              operationLoading={operationLoading}
+              onAddStory={() => onAddStory(backlogSprint.id)}
+              onOpenSprint={() => onOpenSprint(backlogSprint.id)}
+              onCloseSprint={(type) => onCloseSprint(backlogSprint.id, type)}
+              onDeleteSprint={() => onDeleteSprint(backlogSprint.id)}
+              onToggleStory={onToggleStory}
+            />
+          </div>
         )}
       </main>
     </DragDropContext>
