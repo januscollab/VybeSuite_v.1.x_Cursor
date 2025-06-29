@@ -43,6 +43,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<'openai' | 'anthropic'>(aiSettings.defaultProvider);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [includeGithubCodeReview, setIncludeGithubCodeReview] = useState(false);
 
   const { getStoryGenerationPrompt } = usePrompts();
 
@@ -58,6 +59,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
       setGenerationError(null);
       setSelectedProvider(aiSettings.defaultProvider);
       setShowDeleteConfirmation(false);
+      setIncludeGithubCodeReview(false);
     } else if (isEditMode && story) {
       // Pre-populate form with existing story data
       setFormData({
@@ -159,10 +161,22 @@ export const StoryModal: React.FC<StoryModalProps> = ({
     try {
       const systemPrompt = getStoryGenerationPrompt(selectedProvider);
       
+      // Modify the prompt if GitHub code review is requested for Claude
+      let finalPrompt = storyPrompt;
+      if (selectedProvider === 'anthropic' && includeGithubCodeReview) {
+        finalPrompt = `${storyPrompt}
+
+Additional requirement: Include GitHub code review considerations in the story description, such as:
+- Code review checklist items
+- Pull request requirements
+- Review criteria and standards
+- Documentation requirements for reviewers`;
+      }
+      
       const result = await generateStory({
         provider: selectedProvider,
         model,
-        prompt: storyPrompt,
+        prompt: finalPrompt,
         apiKey,
         systemPrompt
       });
@@ -267,24 +281,38 @@ export const StoryModal: React.FC<StoryModalProps> = ({
                 {/* AI Provider Selection */}
                 <div className="flex gap-2 mb-2">
                   {AI_PROVIDERS.map((provider) => (
-                    <button
-                      key={provider.id}
-                      type="button"
-                      onClick={() => setSelectedProvider(provider.id)}
-                      disabled={!hasValidApiKey(provider.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                        selectedProvider === provider.id
-                          ? 'bg-devsuite-primary text-text-inverse'
-                          : hasValidApiKey(provider.id)
-                          ? 'bg-bg-muted text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary'
-                          : 'bg-bg-muted text-text-disabled cursor-not-allowed'
-                      }`}
-                    >
-                      {provider.name}
-                      {!hasValidApiKey(provider.id) && (
-                        <AlertCircle className="w-3 h-3" />
+                    <div key={provider.id} className="flex flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProvider(provider.id)}
+                        disabled={!hasValidApiKey(provider.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                          selectedProvider === provider.id
+                            ? 'bg-devsuite-primary text-text-inverse'
+                            : hasValidApiKey(provider.id)
+                            ? 'bg-bg-muted text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary'
+                            : 'bg-bg-muted text-text-disabled cursor-not-allowed'
+                        }`}
+                      >
+                        {provider.name}
+                        {!hasValidApiKey(provider.id) && (
+                          <AlertCircle className="w-3 h-3" />
+                        )}
+                      </button>
+                      
+                      {/* GitHub Code Review Checkbox - Only show for Claude */}
+                      {provider.id === 'anthropic' && selectedProvider === 'anthropic' && (
+                        <label className="flex items-center gap-1.5 px-2 py-1 text-xs text-text-secondary cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={includeGithubCodeReview}
+                            onChange={(e) => setIncludeGithubCodeReview(e.target.checked)}
+                            className="w-3 h-3 text-devsuite-primary border-border-strong rounded focus:ring-devsuite-primary focus:ring-1"
+                          />
+                          include github code review
+                        </label>
                       )}
-                    </button>
+                    </div>
                   ))}
                 </div>
                 
