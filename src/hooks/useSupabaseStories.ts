@@ -50,11 +50,11 @@ export const useSupabaseStories = () => {
           }
         ];
 
-        const { error: insertError } = await supabase
+        const { error: upsertError } = await supabase
           .from('sprints')
-          .insert(defaultSprints);
+          .upsert(defaultSprints, { onConflict: 'id' });
 
-        if (insertError) throw insertError;
+        if (upsertError) throw upsertError;
       }
 
       // Load all data
