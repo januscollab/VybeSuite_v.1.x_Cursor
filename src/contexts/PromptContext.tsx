@@ -44,27 +44,30 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Parse the open sprint prompt to extract story format
   const parseOpenSprintPrompt = (rawPrompt: string) => {
+    // CRITICAL FIX: Remove all carriage return characters to normalize line endings
+    const normalizedPrompt = rawPrompt.replace(/\r/g, '');
+    
     const startDelimiter = '---STORY_ITEM_FORMAT_START---';
     const endDelimiter = '---STORY_ITEM_FORMAT_END---';
     
-    const startIndex = rawPrompt.indexOf(startDelimiter);
-    const endIndex = rawPrompt.indexOf(endDelimiter);
+    const startIndex = normalizedPrompt.indexOf(startDelimiter);
+    const endIndex = normalizedPrompt.indexOf(endDelimiter);
     
     if (startIndex === -1 || endIndex === -1) {
       console.warn('Story format delimiters not found in open sprint prompt, using default format');
       return {
-        mainPrompt: rawPrompt,
+        mainPrompt: normalizedPrompt,
         storyFormat: '{storyNumber}: {storyTitle}\nDescription: {storyDescription}\n------------\n'
       };
     }
     
     // Extract the story format (content between delimiters)
     const formatStart = startIndex + startDelimiter.length;
-    const storyFormat = rawPrompt.substring(formatStart, endIndex).trim();
+    const storyFormat = normalizedPrompt.substring(formatStart, endIndex).trim();
     
     // Remove the entire story format block from the main prompt
-    const beforeFormat = rawPrompt.substring(0, startIndex);
-    const afterFormat = rawPrompt.substring(endIndex + endDelimiter.length);
+    const beforeFormat = normalizedPrompt.substring(0, startIndex);
+    const afterFormat = normalizedPrompt.substring(endIndex + endDelimiter.length);
     const mainPrompt = (beforeFormat + afterFormat).trim();
     
     return {
