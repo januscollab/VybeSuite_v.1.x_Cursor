@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, AlertCircle } from 'lucide-react';
+import { X, Sparkles, AlertCircle, Plus } from 'lucide-react';
 import { AddStoryFormData, AISettings } from '../types';
 import { generateStory, AIServiceError } from '../utils/aiService';
 import { AI_PROVIDERS } from '../constants/ai';
@@ -64,6 +64,17 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
     e.preventDefault();
     if (formData.title.trim()) {
       onSubmit(sprintId, formData.title.trim(), formData.description.trim(), formData.tags);
+      onClose();
+    }
+  };
+
+  const handleCreateStory = () => {
+    if (storyPrompt.trim()) {
+      // Use the prompt as the title if no title is provided
+      const title = formData.title.trim() || storyPrompt.trim();
+      const description = formData.description.trim() || `Story created from prompt: ${storyPrompt.trim()}`;
+      
+      onSubmit(sprintId, title, description, formData.tags);
       onClose();
     }
   };
@@ -227,15 +238,27 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
               )}
               
               {storyPrompt.trim() && (
-                <button
-                  type="button"
-                  onClick={handleGenerateStory}
-                  disabled={isGenerating || !hasValidApiKey(selectedProvider)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 bg-transparent text-devsuite-primary text-xs font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all mt-1.5 hover:bg-devsuite-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Sparkles className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
-                  {isGenerating ? 'Generating...' : `Generate with ${getProviderName(selectedProvider)}`}
-                </button>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <button
+                    type="button"
+                    onClick={handleGenerateStory}
+                    disabled={isGenerating || !hasValidApiKey(selectedProvider)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-transparent text-devsuite-primary text-xs font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all hover:bg-devsuite-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Sparkles className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+                    {isGenerating ? 'Generating...' : `Generate with ${getProviderName(selectedProvider)}`}
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={handleCreateStory}
+                    disabled={isGenerating}
+                    className="flex items-center gap-1 px-2.5 py-1.5 bg-devsuite-primary text-text-inverse text-xs font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all hover:bg-devsuite-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Create Story
+                  </button>
+                </div>
               )}
               
               {!hasValidApiKey(selectedProvider) && (
@@ -361,7 +384,7 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!formData.title.trim() && !storyPrompt.trim()}
+            disabled={!formData.title.trim()}
             className="flex items-center gap-1.5 px-3 py-2 bg-transparent text-text-secondary text-[13px] font-medium cursor-pointer border-none rounded-md transition-all hover:bg-devsuite-primary/10 hover:text-devsuite-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Sparkles className="w-5 h-5" />
