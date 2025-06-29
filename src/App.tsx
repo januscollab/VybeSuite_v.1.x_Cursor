@@ -68,7 +68,6 @@ function AppContent() {
     setAddSprintModal(false);
   };
 
-  const handleSubmitSprint = (title: string, icon: string, isBacklog: boolean, isDraggable: boolean) => {
   const handleSubmitSprint = (title: string, icon: string, description: string, isBacklog: boolean, isDraggable: boolean) => {
     addSprint(title, icon, description, isBacklog, isDraggable);
   };
