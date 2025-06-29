@@ -53,6 +53,7 @@ function AppContent() {
     operationLoading,
     addStory, 
     addSprint,
+    deleteSprint,
     toggleStory, 
     moveStory, 
     closeSprint,
@@ -123,6 +124,10 @@ function AppContent() {
 
   const handleCloseSprint = (sprintId: string, type: 'completed' | 'all') => {
     closeSprint(sprintId, type);
+  };
+
+  const handleDeleteSprint = (sprintId: string) => {
+    deleteSprint(sprintId);
   };
 
   const handleToggleStory = (storyId: string) => {
@@ -196,6 +201,7 @@ function AppContent() {
                   onAddStory={handleAddStory}
                   onOpenSprint={handleOpenSprint}
                   onCloseSprint={handleCloseSprint}
+                  onDeleteSprint={handleDeleteSprint}
                   onToggleStory={handleToggleStory}
                   onMoveStory={handleMoveStory}
                 />

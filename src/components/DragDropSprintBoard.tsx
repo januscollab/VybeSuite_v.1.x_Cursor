@@ -10,6 +10,7 @@ interface DragDropSprintBoardProps {
   onAddStory: (sprintId: string) => void;
   onOpenSprint: (sprintId: string) => void;
   onCloseSprint: (sprintId: string, type: 'completed' | 'all') => void;
+  onDeleteSprint: (sprintId: string) => void;
   onToggleStory: (storyId: string) => void;
   onMoveStory: (storyId: string, destinationSprintId: string, newPosition: number) => void;
 }
@@ -21,6 +22,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
   onAddStory,
   onOpenSprint,
   onCloseSprint,
+  onDeleteSprint,
   onToggleStory,
   onMoveStory
 }) => {
@@ -73,6 +75,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
               onAddStory={() => onAddStory(prioritySprint.id)}
               onOpenSprint={() => onOpenSprint(prioritySprint.id)}
               onCloseSprint={(type) => onCloseSprint(prioritySprint.id, type)}
+              onDeleteSprint={() => onDeleteSprint(sprint.id)}
               onToggleStory={onToggleStory}
             />
           </div>
@@ -113,6 +116,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
             onAddStory={() => onAddStory(backlogSprint.id)}
             onOpenSprint={() => onOpenSprint(backlogSprint.id)}
             onCloseSprint={(type) => onCloseSprint(backlogSprint.id, type)}
+            onDeleteSprint={() => onDeleteSprint(backlogSprint.id)}
             onToggleStory={onToggleStory}
           />
         )}

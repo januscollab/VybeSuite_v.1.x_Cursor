@@ -514,6 +514,57 @@ export const useSupabaseStories = () => {
     }
   }, [user, setOperationLoadingState]);
 
+  // Delete sprint
+  const deleteSprint = useCallback(async (sprintId: string) => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Prevent deletion of system sprints
+    if (sprintId === 'priority' || sprintId === 'backlog') {
+      throw new Error('System sprints cannot be deleted');
+    }
+
+    const operationId = `delete-sprint-${sprintId}`;
+    setOperationLoadingState(operationId, true);
+
+    try {
+      // First, check if sprint has any stories
+      const { data: stories, error: storiesError } = await supabase
+        .from('stories')
+        .select('id')
+        .eq('sprint_id', sprintId)
+        .is('archived_at', null);
+
+      if (storiesError) throw storiesError;
+
+      if (stories && stories.length > 0) {
+        throw new Error('Cannot delete sprint with active stories. Please move or archive all stories first.');
+      }
+
+      // Delete the sprint
+      const { error } = await supabase
+        .from('sprints')
+        .delete()
+        .eq('id', sprintId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      console.log('Sprint deleted successfully:', sprintId);
+      
+      // Real-time subscription will handle the update
+
+      return true;
+    } catch (err) {
+      console.error('Error deleting sprint:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete sprint');
+      throw err;
+    } finally {
+      setOperationLoadingState(operationId, false);
+    }
+  }, [user, setOperationLoadingState]);
+
   // Enhanced toggle story with better error handling
   const toggleStory = useCallback(async (storyId: string) => {
     const operationId = `toggle-story-${storyId}`;
@@ -774,6 +825,7 @@ export const useSupabaseStories = () => {
     operationLoading,
     addStory,
     addSprint,
+    deleteSprint,
     toggleStory,
     moveStory,
     closeSprint,
