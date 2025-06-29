@@ -69,7 +69,8 @@ function AppContent() {
   };
 
   const handleSubmitSprint = (title: string, icon: string, isBacklog: boolean, isDraggable: boolean) => {
-    addSprint(title, icon, isBacklog, isDraggable);
+  const handleSubmitSprint = (title: string, icon: string, description: string, isBacklog: boolean, isDraggable: boolean) => {
+    addSprint(title, icon, description, isBacklog, isDraggable);
   };
 
   const handleOpenSettings = () => {

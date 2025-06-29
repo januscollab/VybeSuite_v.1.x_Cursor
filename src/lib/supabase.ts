@@ -17,6 +17,7 @@ export interface Database {
         Row: {
           id: string;
           title: string;
+          description: string | null;
           icon: string;
           is_backlog: boolean;
           is_draggable: boolean;
@@ -29,6 +30,7 @@ export interface Database {
         Insert: {
           id?: string;
           title: string;
+          description?: string | null;
           icon: string;
           is_backlog?: boolean;
           is_draggable?: boolean;
@@ -41,6 +43,7 @@ export interface Database {
         Update: {
           id?: string;
           title?: string;
+          description?: string | null;
           icon?: string;
           is_backlog?: boolean;
           is_draggable?: boolean;

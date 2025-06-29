@@ -4,7 +4,7 @@ import { X, Plus, AlertCircle } from 'lucide-react';
 interface AddSprintModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (title: string, icon: string, isBacklog: boolean, isDraggable: boolean) => void;
+  onSubmit: (title: string, icon: string, description: string, isBacklog: boolean, isDraggable: boolean) => void;
 }
 
 export const AddSprintModal: React.FC<AddSprintModalProps> = ({
@@ -14,9 +14,8 @@ export const AddSprintModal: React.FC<AddSprintModalProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     title: '',
-    icon: '🚀',
-    isBacklog: false,
-    isDraggable: true
+    description: '',
+    icon: '🚀'
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -25,9 +24,8 @@ export const AddSprintModal: React.FC<AddSprintModalProps> = ({
     if (!isOpen) {
       setFormData({
         title: '',
-        icon: '🚀',
-        isBacklog: false,
-        isDraggable: true
+        description: '',
+        icon: '🚀'
       });
       setError(null);
     }
@@ -65,11 +63,13 @@ export const AddSprintModal: React.FC<AddSprintModalProps> = ({
       return;
     }
 
+    // Default sprint rules: not backlog, draggable enabled
     onSubmit(
       formData.title.trim(),
       formData.icon.trim(),
-      formData.isBacklog,
-      formData.isDraggable
+      formData.description.trim(),
+      false, // isBacklog - default to false
+      true   // isDraggable - default to true
     );
     onClose();
   };
@@ -125,33 +125,40 @@ export const AddSprintModal: React.FC<AddSprintModalProps> = ({
               </div>
             </div>
 
+            {/* Sprint Description */}
+            <div>
+              <label htmlFor="sprintDescription" className="block font-semibold text-sm mb-2 text-text-primary">
+                Sprint Description
+              </label>
+              <textarea
+                id="sprintDescription"
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Describe the goals and objectives of this sprint..."
+                className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-sm text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit resize-vertical min-h-[80px]"
+                rows={3}
+              />
+              <div className="text-xs text-text-tertiary mt-1">
+                Provide context about what this sprint aims to achieve and any important notes
+              </div>
+            </div>
+
             {/* Sprint Icon */}
             <div>
-              <label htmlFor="sprintIcon" className="block font-semibold text-sm mb-2 text-text-primary">
+              <label className="block font-semibold text-sm mb-2 text-text-primary">
                 Sprint Icon <span className="text-error ml-0.5">*</span>
               </label>
               <div className="space-y-3">
-                <input
-                  id="sprintIcon"
-                  type="text"
-                  value={formData.icon}
-                  onChange={(e) => setFormData(prev => ({ ...prev, icon: e.target.value }))}
-                  placeholder="🚀"
-                  className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-sm text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit text-center"
-                  maxLength={2}
-                  required
-                />
-                
-                {/* Common Icons */}
+                {/* Icon Selection Grid */}
                 <div>
-                  <p className="text-xs text-text-tertiary mb-2">Popular icons:</p>
+                  <p className="text-xs text-text-tertiary mb-2">Choose an icon for your sprint:</p>
                   <div className="grid grid-cols-6 gap-2">
                     {commonIcons.map((icon) => (
                       <button
                         key={icon}
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, icon }))}
-                        className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center text-lg transition-all hover:border-devsuite-primary hover:bg-devsuite-primary/5 ${
+                        className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center text-xl transition-all hover:border-devsuite-primary hover:bg-devsuite-primary/5 ${
                           formData.icon === icon
                             ? 'border-devsuite-primary bg-devsuite-primary-subtle'
                             : 'border-border-default bg-bg-primary'
@@ -162,42 +169,16 @@ export const AddSprintModal: React.FC<AddSprintModalProps> = ({
                     ))}
                   </div>
                 </div>
+                
+                {/* Selected Icon Display */}
+                <div className="flex items-center gap-3 p-3 bg-bg-muted rounded-lg">
+                  <span className="text-2xl">{formData.icon}</span>
+                  <div>
+                    <p className="text-sm font-medium text-text-primary">Selected Icon</p>
+                    <p className="text-xs text-text-tertiary">This icon will represent your sprint</p>
+                  </div>
+                </div>
               </div>
-            </div>
-
-            {/* Sprint Options */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-sm text-text-primary">Sprint Options</h3>
-              
-              <label className="flex items-center gap-3 p-3 border border-border-default rounded-lg cursor-pointer hover:bg-bg-muted transition-all">
-                <input
-                  type="checkbox"
-                  checked={formData.isBacklog}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isBacklog: e.target.checked }))}
-                  className="w-4 h-4 text-devsuite-primary border-border-strong rounded focus:ring-devsuite-primary focus:ring-2"
-                />
-                <div className="flex-1">
-                  <span className="font-medium text-text-primary">Backlog Sprint</span>
-                  <p className="text-xs text-text-tertiary mt-1">
-                    This sprint will be used for storing future stories and ideas
-                  </p>
-                </div>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 border border-border-default rounded-lg cursor-pointer hover:bg-bg-muted transition-all">
-                <input
-                  type="checkbox"
-                  checked={formData.isDraggable}
-                  onChange={(e) => setFormData(prev => ({ ...prev, isDraggable: e.target.checked }))}
-                  className="w-4 h-4 text-devsuite-primary border-border-strong rounded focus:ring-devsuite-primary focus:ring-2"
-                />
-                <div className="flex-1">
-                  <span className="font-medium text-text-primary">Allow Drag & Drop</span>
-                  <p className="text-xs text-text-tertiary mt-1">
-                    Enable drag and drop functionality for stories within this sprint
-                  </p>
-                </div>
-              </label>
             </div>
           </form>
         </div>

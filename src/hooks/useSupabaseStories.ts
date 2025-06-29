@@ -462,7 +462,7 @@ export const useSupabaseStories = () => {
   }, [generateStoryNumber, user, setOperationLoadingState]);
 
   // Add new sprint
-  const addSprint = useCallback(async (title: string, icon: string, isBacklog: boolean, isDraggable: boolean) => {
+  const addSprint = useCallback(async (title: string, icon: string, description: string, isBacklog: boolean, isDraggable: boolean) => {
     if (!user) {
       throw new Error('User not authenticated');
     }
@@ -492,6 +492,7 @@ export const useSupabaseStories = () => {
       const newSprint = {
         id: sprintId,
         title,
+        description: description || null,
         icon,
         is_backlog: isBacklog,
         is_draggable: isDraggable,
