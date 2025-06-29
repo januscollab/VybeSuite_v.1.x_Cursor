@@ -6,6 +6,7 @@ import { DragDropSprintBoard } from './components/DragDropSprintBoard';
 import { ArchiveView } from './components/ArchiveView';
 import { AddStoryModal } from './components/AddStoryModal';
 import { SettingsModal } from './components/SettingsModal';
+import { OpenSprintModal } from './components/OpenSprintModal';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useSupabaseStories } from './hooks/useSupabaseStories';
@@ -33,6 +34,13 @@ function AppContent() {
     isOpen: false,
     sprintId: '',
     sprintTitle: ''
+  });
+  const [openSprintModal, setOpenSprintModal] = useState<{
+    isOpen: boolean;
+    sprint: Sprint | null;
+  }>({
+    isOpen: false,
+    sprint: null
   });
 
   // Always call hooks at the top level - never conditionally
@@ -86,8 +94,20 @@ function AppContent() {
   };
 
   const handleOpenSprint = (sprintId: string) => {
-    console.log('Open Sprint clicked for sprint:', sprintId);
-    // Will implement in Sprint 4
+    const sprint = sprints.find(s => s.id === sprintId);
+    if (sprint) {
+      setOpenSprintModal({
+        isOpen: true,
+        sprint
+      });
+    }
+  };
+
+  const handleCloseOpenSprintModal = () => {
+    setOpenSprintModal({
+      isOpen: false,
+      sprint: null
+    });
   };
 
   const handleCloseSprint = (sprintId: string, type: 'completed' | 'all') => {
@@ -186,6 +206,14 @@ function AppContent() {
                 onClose={() => setSettingsModalOpen(false)}
                 onSave={handleSaveAISettings}
               />
+
+              {openSprintModal.sprint && (
+                <OpenSprintModal
+                  isOpen={openSprintModal.isOpen}
+                  sprint={openSprintModal.sprint}
+                  onClose={handleCloseOpenSprintModal}
+                />
+              )}
             </>
           )}
         </div>
