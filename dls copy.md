@@ -1,7 +1,7 @@
 # devsuite Design System - Complete Color Palette
 
 **Extracted from actual devsuite app interface screenshots**  
-*A comprehensive color system for devsuite applications*
+*A comprehensive color system for devsuite application*
 
 ---
 
