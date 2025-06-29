@@ -16,6 +16,12 @@ export const useSupabaseStories = () => {
 
   // Initialize data - create default sprints if they don't exist
   const initializeData = useCallback(async () => {
+    if (!user) {
+      setError('User not authenticated');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -24,6 +30,8 @@ export const useSupabaseStories = () => {
       const { data: existingSprints, error: sprintsError } = await supabase
         .from('sprints')
         .select('*')
+        .eq('user_id', user.id)
+        .is('archived_at', null)
         .order('position');
 
       if (sprintsError) throw sprintsError;
@@ -37,7 +45,8 @@ export const useSupabaseStories = () => {
             icon: '🔥',
             is_backlog: false,
             is_draggable: false,
-            position: 0
+            position: 0,
+            user_id: user.id
           },
           {
             id: 'development',
@@ -45,7 +54,8 @@ export const useSupabaseStories = () => {
             icon: '⚡',
             is_backlog: false,
             is_draggable: true,
-            position: 1
+            position: 1,
+            user_id: user.id
           },
           {
             id: 'backlog',
@@ -53,7 +63,8 @@ export const useSupabaseStories = () => {
             icon: '📋',
             is_backlog: true,
             is_draggable: false,
-            position: 2
+            position: 2,
+            user_id: user.id
           }
         ];
 
@@ -73,15 +84,19 @@ export const useSupabaseStories = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   // Load sprints and stories from Supabase
   const loadData = useCallback(async () => {
+    if (!user) return;
+
     try {
       // Load sprints
       const { data: sprintsData, error: sprintsError } = await supabase
         .from('sprints')
         .select('*')
+        .eq('user_id', user.id)
+        .is('archived_at', null)
         .order('position');
 
       if (sprintsError) throw sprintsError;
@@ -90,6 +105,7 @@ export const useSupabaseStories = () => {
       const { data: storiesData, error: storiesError } = await supabase
         .from('stories')
         .select('*')
+        .is('archived_at', null)
         .order('position');
 
       if (storiesError) throw storiesError;
@@ -122,7 +138,7 @@ export const useSupabaseStories = () => {
       console.error('Error loading data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load data');
     }
-  }, []);
+  }, [user]);
 
   // Handle real-time sprint changes
   const handleSprintChange = useCallback((payload: RealtimePostgresChangesPayload<any>) => {
@@ -345,12 +361,11 @@ export const useSupabaseStories = () => {
   const generateStoryNumber = useCallback(async () => {
     if (!user) return;
 
-    if (!user) return;
-
     try {
       const { data, error } = await supabase
         .from('stories')
         .select('number')
+        .is('archived_at', null)
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -366,10 +381,14 @@ export const useSupabaseStories = () => {
       console.error('Error generating story number:', err);
       return `STORY-${String(Date.now()).slice(-3)}`;
     }
-  }, []);
+  }, [user]);
 
   // Add new story
   const addStory = useCallback(async (sprintId: string, title: string, description: string, tags: string[]) => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
     try {
       const storyNumber = await generateStoryNumber();
       
@@ -378,6 +397,7 @@ export const useSupabaseStories = () => {
         .from('stories')
         .select('position')
         .eq('sprint_id', sprintId)
+        .is('archived_at', null)
         .order('position', { ascending: false })
         .limit(1);
 
@@ -415,7 +435,7 @@ export const useSupabaseStories = () => {
       setError(err instanceof Error ? err.message : 'Failed to add story');
       throw err;
     }
-  }, [generateStoryNumber]);
+  }, [generateStoryNumber, user]);
 
   // Toggle story completion
   const toggleStory = useCallback(async (storyId: string) => {
@@ -450,16 +470,14 @@ export const useSupabaseStories = () => {
 
   // Move story between sprints or reorder within sprint
   const moveStory = useCallback(async (storyId: string, destinationSprintId: string, newPosition: number) => {
+    if (!user) return;
+
     try {
       // Get all stories from the database to ensure we have the latest state
       const { data: allStories, error: fetchError } = await supabase
         .from('stories')
-        .select(`
-          *,
-          sprints!inner(user_id)
-        `)
-        .eq('sprints.user_id', user.id)
-        .eq('user_id', user.id)
+        .select('*')
+        .is('archived_at', null)
         .order('position');
 
       if (fetchError) throw fetchError;
@@ -547,7 +565,7 @@ export const useSupabaseStories = () => {
       console.error('Error moving story:', err);
       setError(err instanceof Error ? err.message : 'Failed to move story');
     }
-  }, []);
+  }, [user]);
 
   // Calculate sprint statistics
   const getSprintStats = useCallback((sprintId: string): SprintStats => {
@@ -585,8 +603,10 @@ export const useSupabaseStories = () => {
 
   // Initialize on mount
   useEffect(() => {
-    initializeData();
-  }, [initializeData]);
+    if (user) {
+      initializeData();
+    }
+  }, [user, initializeData]);
 
   return {
     sprints,
