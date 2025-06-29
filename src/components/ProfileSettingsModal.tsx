@@ -394,25 +394,26 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                       </button>
                     </div>
                   </div>
+                </div>
+
+                <div className="bg-info-light border border-info rounded-lg p-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 text-info-dark mt-0.5">🔒</div>
+                    <div>
+                      <h4 className="font-medium text-info-dark text-sm mb-1">Password Requirements</h4>
+                      <ul className="text-info-dark text-xs space-y-1">
+                        <li>• Minimum 6 characters long</li>
+                        <li>• Both password fields must match</li>
+                        <li>• Leave blank to keep current password</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               </div>
             </form>
           )}
         </div>
 
-                  <div className="bg-info-light border border-info rounded-lg p-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-5 h-5 text-info-dark mt-0.5">🔒</div>
-                      <div>
-                        <h4 className="font-medium text-info-dark text-sm mb-1">Password Requirements</h4>
-                        <ul className="text-info-dark text-xs space-y-1">
-                          <li>• Minimum 6 characters long</li>
-                          <li>• Both password fields must match</li>
-                          <li>• Leave blank to keep current password</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
         {/* Modal Footer */}
         <div className="px-6 py-3 border-t border-border-default flex justify-end gap-3">
           <button
