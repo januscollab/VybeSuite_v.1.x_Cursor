@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DraggableProvidedDragHandleProps } from '@hello-pangea/dnd';
 import { Droppable } from '@hello-pangea/dnd';
+import { validateSprintLayout } from '../constants/layout';
 import { Plus, Play, FileText, GripVertical, Trash2 } from 'lucide-react';
 import { DraggableStory } from './DraggableStory';
 import { Story, SprintStats } from '../types';
@@ -75,9 +76,12 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
 
   const isSprintLoading = operationLoading[`close-sprint-${id}`];
   const isDeleteLoading = operationLoading[`delete-sprint-${id}`];
+  
+  // Apply layout rules validation
+  const layoutRules = validateSprintLayout({ id, isBacklog });
   const isPrioritySprint = id === 'priority';
-  const isBacklogSprint = id === 'backlog' || isBacklog;
-  const isUserGeneratedSprint = !isPrioritySprint && !isBacklogSprint;
+  const isBacklogSprint = isBacklog;
+  const isUserGeneratedSprint = layoutRules.isDeletable;
 
   return (
     <div className={`bg-bg-primary border rounded-xl p-6 shadow-devsuite transition-all hover:shadow-devsuite-hover hover:border-border-strong relative ${
@@ -86,14 +90,12 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
         : isBacklogSprint
         ? 'border-devsuite-primary border-2 bg-gradient-to-br from-bg-primary to-devsuite-primary-subtle'
         : 'border-border-default'
-    } ${
-      isBacklog ? 'col-span-full' : ''
     }`}>
       {/* Sprint Header */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
-            {isDraggable && !isPrioritySprint && dragHandleProps && (
+            {layoutRules.isDraggable && dragHandleProps && (
               <div {...dragHandleProps}>
                 <GripVertical className="w-4 h-4 text-text-quaternary cursor-grab hover:text-devsuite-primary transition-colors" />
               </div>
@@ -116,6 +118,10 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
                 BACKLOG
               </span>
             )}
+            {/* Width indicator for development/debugging */}
+            <span className="px-2 py-0.5 bg-bg-muted text-text-quaternary text-xs font-medium rounded-full">
+              {layoutRules.width}
+            </span>
           </div>
           
           <div className="flex gap-4 text-sm text-text-tertiary">

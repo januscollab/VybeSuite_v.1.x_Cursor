@@ -3,6 +3,19 @@ import { DragDropContext, DropResult, Droppable, Draggable } from '@hello-pangea
 import { DroppableSprintCard } from './DroppableSprintCard';
 import { Sprint, SprintStats } from '../types';
 
+/**
+ * SPRINT LAYOUT RULES - CRITICAL DESIGN REQUIREMENT
+ * 
+ * 1. ALL SPRINTS EXCEPT BACKLOG ARE ALWAYS 50% WIDTH
+ * 2. Priority Sprint: ALWAYS 50% width, position 0, left side
+ * 3. User-defined Sprints: ALWAYS 50% width, arranged in 2-column grid
+ * 4. Backlog Sprint: ALWAYS full width, always last
+ * 
+ * This is a fundamental design rule that must NEVER be changed.
+ * The 50% width constraint ensures consistent visual hierarchy and
+ * prevents layout issues regardless of sprint count.
+ */
+
 interface DragDropSprintBoardProps {
   sprints: Sprint[];
   operationLoading?: Record<string, boolean>;
@@ -52,7 +65,6 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
       // Handle story movement
       onMoveStory(draggableId, destination.droppableId, destination.index);
     }
-
   };
 
   // Sort sprints by position to ensure Priority Sprint is always first
@@ -72,7 +84,10 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
       <main className="p-6 max-w-none mx-auto">
         <h1 className="text-3xl font-bold text-text-primary mb-8">Sprint Board</h1>
         
-        {/* Priority Sprint - Always First and 50% Width */}
+        {/* 
+          PRIORITY SPRINT SECTION - ALWAYS 50% WIDTH
+          The Priority Sprint is always rendered first and takes exactly 50% width
+        */}
         {prioritySprint && (
           <div className="grid grid-cols-2 gap-5 mb-5">
             <DroppableSprintCard
@@ -93,53 +108,73 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
           </div>
         )}
         
-        {/* Draggable Sprints */}
+        {/* 
+          USER-DEFINED SPRINTS SECTION - ALL 50% WIDTH
+          All user-defined sprints are arranged in a 2-column grid
+          Each sprint takes exactly 50% width (one column)
+        */}
         {draggableSprints.length > 0 && (
           <Droppable droppableId="sprints" type="sprint" direction="vertical">
             {(provided, snapshot) => (
               <div
                 ref={provided.innerRef}
                 {...provided.droppableProps}
-                className={`space-y-5 mb-5 transition-colors ${
+                className={`mb-5 transition-colors ${
                   snapshot.isDraggingOver ? 'bg-devsuite-primary-subtle/30 rounded-lg p-4' : ''
                 }`}
               >
-                {draggableSprints.map((sprint, index) => (
-                  <Draggable key={sprint.id} draggableId={sprint.id} index={index} type="sprint">
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        className={`transition-all ${
-                          snapshot.isDragging ? 'transform rotate-1 scale-105 z-50' : ''
-                        }`}
-                      >
-                        <DroppableSprintCard
-                          id={sprint.id}
-                          title={sprint.title}
-                          icon={sprint.icon}
-                          stories={sprint.stories}
-                          stats={getSprintStats(sprint.id)}
-                          isDraggable={sprint.isDraggable}
-                          operationLoading={operationLoading}
-                          dragHandleProps={provided.dragHandleProps}
-                          onAddStory={() => onAddStory(sprint.id)}
-                          onOpenSprint={() => onOpenSprint(sprint.id)}
-                          onCloseSprint={(type) => onCloseSprint(sprint.id, type)}
-                          onDeleteSprint={() => onDeleteSprint(sprint.id)}
-                          onToggleStory={onToggleStory}
-                        />
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
+                {/* 
+                  2-COLUMN GRID FOR USER SPRINTS - ENFORCES 50% WIDTH RULE
+                  Each sprint occupies exactly one column (50% width)
+                */}
+                <div className="grid grid-cols-2 gap-5">
+                  {draggableSprints.map((sprint, index) => (
+                    <Draggable key={sprint.id} draggableId={sprint.id} index={index} type="sprint">
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={`transition-all ${
+                            snapshot.isDragging ? 'transform rotate-1 scale-105 z-50' : ''
+                          }`}
+                        >
+                          <DroppableSprintCard
+                            id={sprint.id}
+                            title={sprint.title}
+                            icon={sprint.icon}
+                            stories={sprint.stories}
+                            stats={getSprintStats(sprint.id)}
+                            isDraggable={sprint.isDraggable}
+                            operationLoading={operationLoading}
+                            dragHandleProps={provided.dragHandleProps}
+                            onAddStory={() => onAddStory(sprint.id)}
+                            onOpenSprint={() => onOpenSprint(sprint.id)}
+                            onCloseSprint={(type) => onCloseSprint(sprint.id, type)}
+                            onDeleteSprint={() => onDeleteSprint(sprint.id)}
+                            onToggleStory={onToggleStory}
+                          />
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  
+                  {/* 
+                    FILL EMPTY SPACE IF ODD NUMBER OF SPRINTS
+                    Ensures grid layout remains consistent
+                  */}
+                  {draggableSprints.length % 2 === 1 && <div></div>}
+                </div>
                 {provided.placeholder}
               </div>
             )}
           </Droppable>
         )}
 
-        {/* Backlog Sprint - Always Last */}
+        {/* 
+          BACKLOG SPRINT SECTION - FULL WIDTH (EXCEPTION TO 50% RULE)
+          The Backlog Sprint is the ONLY sprint that takes full width
+          It's always rendered last
+        */}
         {backlogSprint && (
           <DroppableSprintCard
             id={backlogSprint.id}
