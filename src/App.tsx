@@ -138,6 +138,10 @@ function AppContent() {
     moveStory(storyId, destinationSprintId, newPosition);
   };
 
+  const handleMoveSprint = (sprintId: string, newPosition: number) => {
+    moveSprint(sprintId, newPosition);
+  };
+
   return (
     <ProtectedRoute>
       <ErrorBoundary>
@@ -204,6 +208,7 @@ function AppContent() {
                   onDeleteSprint={handleDeleteSprint}
                   onToggleStory={handleToggleStory}
                   onMoveStory={handleMoveStory}
+                 onMoveSprint={handleMoveSprint}
                 />
               ) : (
                 <ArchiveView />

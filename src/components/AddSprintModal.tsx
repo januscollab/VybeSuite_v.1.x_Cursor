@@ -79,7 +79,14 @@ export const AddSprintModal: React.FC<AddSprintModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-bg-overlay z-50 flex items-center justify-center p-5">
+    <div 
+      className="fixed inset-0 bg-bg-overlay z-50 flex items-center justify-center p-5"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div className="bg-bg-primary rounded-xl shadow-devsuite-modal border border-border-default w-full max-w-[500px]">
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-border-default relative">

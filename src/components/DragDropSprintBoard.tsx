@@ -1,5 +1,5 @@
 import React from 'react';
-import { DragDropContext, DropResult } from '@hello-pangea/dnd';
+import { DragDropContext, DropResult, Droppable, Draggable } from '@hello-pangea/dnd';
 import { DroppableSprintCard } from './DroppableSprintCard';
 import { Sprint, SprintStats } from '../types';
 
@@ -13,6 +13,7 @@ interface DragDropSprintBoardProps {
   onDeleteSprint: (sprintId: string) => void;
   onToggleStory: (storyId: string) => void;
   onMoveStory: (storyId: string, destinationSprintId: string, newPosition: number) => void;
+  onMoveSprint?: (sprintId: string, newPosition: number) => void;
 }
 
 export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
@@ -24,7 +25,8 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
   onCloseSprint,
   onDeleteSprint,
   onToggleStory,
-  onMoveStory
+  onMoveStory,
+  onMoveSprint
 }) => {
   const handleDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -40,21 +42,29 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
       return;
     }
 
-    // Move the story
-    onMoveStory(draggableId, destination.droppableId, destination.index);
+    // Check if we're dragging a sprint or a story
+    if (result.type === 'sprint') {
+      // Handle sprint reordering
+      if (onMoveSprint) {
+        onMoveSprint(draggableId, destination.index);
+      }
+    } else {
+      // Handle story movement
+      onMoveStory(draggableId, destination.droppableId, destination.index);
+    }
+
   };
 
   // Sort sprints by position to ensure Priority Sprint is always first
   const sortedSprints = [...sprints].sort((a, b) => {
-    // Priority Sprint always comes first (position 0)
-    if (a.id === 'priority') return -1;
-    if (b.id === 'priority') return 1;
-    // Then sort by position
-    return a.id === 'backlog' ? 1 : b.id === 'backlog' ? -1 : 0;
+    // Sort by position, with Priority Sprint always first
+    const aPos = a.id === 'priority' ? -1 : (a.isBacklog ? 1000 : a.position || 0);
+    const bPos = b.id === 'priority' ? -1 : (b.isBacklog ? 1000 : b.position || 0);
+    return aPos - bPos;
   });
 
   const prioritySprint = sortedSprints.find(s => s.id === 'priority');
-  const otherSprints = sortedSprints.filter(s => s.id !== 'priority' && !s.isBacklog);
+  const draggableSprints = sortedSprints.filter(s => s.id !== 'priority' && !s.isBacklog);
   const backlogSprint = sortedSprints.find(s => s.isBacklog);
 
   return (
@@ -64,7 +74,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
         
         {/* Priority Sprint - Always First */}
         {prioritySprint && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+          <div className="mb-5">
             <DroppableSprintCard
               id={prioritySprint.id}
               title={prioritySprint.title}
@@ -75,32 +85,55 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
               onAddStory={() => onAddStory(prioritySprint.id)}
               onOpenSprint={() => onOpenSprint(prioritySprint.id)}
               onCloseSprint={(type) => onCloseSprint(prioritySprint.id, type)}
-              onDeleteSprint={() => onDeleteSprint(sprint.id)}
+              onDeleteSprint={() => onDeleteSprint(prioritySprint.id)}
               onToggleStory={onToggleStory}
             />
           </div>
         )}
         
-        {/* Other Sprints */}
-        {otherSprints.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
-            {otherSprints.map(sprint => (
-              <DroppableSprintCard
-                key={sprint.id}
-                id={sprint.id}
-                title={sprint.title}
-                icon={sprint.icon}
-                stories={sprint.stories}
-                stats={getSprintStats(sprint.id)}
-                isDraggable={sprint.isDraggable}
-                operationLoading={operationLoading}
-                onAddStory={() => onAddStory(sprint.id)}
-                onOpenSprint={() => onOpenSprint(sprint.id)}
-                onCloseSprint={(type) => onCloseSprint(sprint.id, type)}
-                onToggleStory={onToggleStory}
-              />
-            ))}
-          </div>
+        {/* Draggable Sprints */}
+        {draggableSprints.length > 0 && (
+          <Droppable droppableId="sprints" type="sprint" direction="vertical">
+            {(provided, snapshot) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                className={`space-y-5 mb-5 transition-colors ${
+                  snapshot.isDraggingOver ? 'bg-devsuite-primary-subtle/30 rounded-lg p-4' : ''
+                }`}
+              >
+                {draggableSprints.map((sprint, index) => (
+                  <Draggable key={sprint.id} draggableId={sprint.id} index={index} type="sprint">
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        className={`transition-all ${
+                          snapshot.isDragging ? 'transform rotate-1 scale-105 z-50' : ''
+                        }`}
+                      >
+                        <DroppableSprintCard
+                          id={sprint.id}
+                          title={sprint.title}
+                          icon={sprint.icon}
+                          stories={sprint.stories}
+                          stats={getSprintStats(sprint.id)}
+                          isDraggable={sprint.isDraggable}
+                          operationLoading={operationLoading}
+                          dragHandleProps={provided.dragHandleProps}
+                          onAddStory={() => onAddStory(sprint.id)}
+                          onOpenSprint={() => onOpenSprint(sprint.id)}
+                          onCloseSprint={(type) => onCloseSprint(sprint.id, type)}
+                          onDeleteSprint={() => onDeleteSprint(sprint.id)}
+                          onToggleStory={onToggleStory}
+                        />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
         )}
 
         {/* Backlog Sprint - Always Last */}
@@ -120,6 +153,54 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
             onToggleStory={onToggleStory}
           />
         )}
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      className={`grid grid-cols-1 lg:grid-cols-2 gap-5 ${
+                        snapshot.isDragging ? 'transform rotate-2 z-50' : ''
+                      }`}
+                    >
+                      <DroppableSprintCard
+                        id={sprint.id}
+                        title={sprint.title}
+                        icon={sprint.icon}
+                        stories={sprint.stories}
+                        stats={getSprintStats(sprint.id)}
+                        isDraggable={sprint.isDraggable}
+                        operationLoading={operationLoading}
+                        dragHandleProps={provided.dragHandleProps}
+                        onAddStory={() => onAddStory(sprint.id)}
+                        onOpenSprint={() => onOpenSprint(sprint.id)}
+                        onCloseSprint={(type) => onCloseSprint(sprint.id, type)}
+                        onDeleteSprint={() => onDeleteSprint(sprint.id)}
+                        onToggleStory={onToggleStory}
+                      />
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+
+              {/* Backlog Sprint - Always Last and Not Draggable */}
+              {backlogSprint && (
+                <DroppableSprintCard
+                  id={backlogSprint.id}
+                  title={backlogSprint.title}
+                  icon={backlogSprint.icon}
+                  stories={backlogSprint.stories}
+                  stats={getSprintStats(backlogSprint.id)}
+                  isBacklog={backlogSprint.isBacklog}
+                  operationLoading={operationLoading}
+                  onAddStory={() => onAddStory(backlogSprint.id)}
+                  onOpenSprint={() => onOpenSprint(backlogSprint.id)}
+                  onCloseSprint={(type) => onCloseSprint(backlogSprint.id, type)}
+                  onDeleteSprint={() => onDeleteSprint(backlogSprint.id)}
+                  onToggleStory={onToggleStory}
+                />
+              )}
+              
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
       </main>
     </DragDropContext>
   );

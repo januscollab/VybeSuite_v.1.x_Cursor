@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { DraggableProvidedDragHandleProps } from '@hello-pangea/dnd';
 import { Droppable } from '@hello-pangea/dnd';
 import { Plus, Play, FileText, GripVertical, Trash2 } from 'lucide-react';
 import { DraggableStory } from './DraggableStory';
@@ -13,6 +14,7 @@ interface DroppableSprintCardProps {
   isBacklog?: boolean;
   isDraggable?: boolean;
   operationLoading?: Record<string, boolean>;
+  dragHandleProps?: DraggableProvidedDragHandleProps | null;
   onAddStory: () => void;
   onOpenSprint: () => void;
   onCloseSprint: (type: 'completed' | 'all') => void;
@@ -29,6 +31,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
   isBacklog = false,
   isDraggable = false,
   operationLoading = {},
+  dragHandleProps,
   onAddStory,
   onOpenSprint,
   onCloseSprint,
@@ -90,8 +93,10 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
-            {isDraggable && !isPrioritySprint && (
-              <GripVertical className="w-3 h-3 text-text-quaternary cursor-grab hover:text-devsuite-primary transition-colors" />
+            {isDraggable && !isPrioritySprint && dragHandleProps && (
+              <div {...dragHandleProps}>
+                <GripVertical className="w-4 h-4 text-text-quaternary cursor-grab hover:text-devsuite-primary transition-colors" />
+              </div>
             )}
             <span className="text-base">{icon}</span>
             <h3 className={`font-semibold text-lg ${
@@ -196,7 +201,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
           onClick={handleDeleteSprint}
           disabled={isDeleteLoading || stories.length > 0}
           title={stories.length > 0 ? "Move or archive all stories before deleting" : "Delete sprint"}
-          className="absolute bottom-3 left-3 w-8 h-8 bg-error text-text-inverse rounded-full flex items-center justify-center transition-all hover:bg-error-dark disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-error shadow-sm"
+          className="absolute bottom-3 left-3 p-1.5 text-error hover:text-error-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Trash2 className="w-4 h-4" />
         </button>

@@ -513,6 +513,68 @@ export const useSupabaseStories = () => {
     }
   }, [user, setOperationLoadingState]);
 
+  // Move sprint to new position
+  const moveSprint = useCallback(async (sprintId: string, newPosition: number) => {
+    if (!user) return;
+
+    const operationId = `move-sprint-${sprintId}`;
+    setOperationLoadingState(operationId, true);
+
+    try {
+      // Get all sprints from the database to ensure we have the latest state
+      const { data: allSprints, error: fetchError } = await supabase
+        .from('sprints')
+        .select('*')
+        .eq('user_id', user.id)
+        .is('archived_at', null)
+        .order('position');
+
+      if (fetchError) throw fetchError;
+      if (!allSprints) throw new Error('Failed to fetch sprints');
+
+      // Filter out priority and backlog sprints from reordering
+      const reorderableSprints = allSprints.filter(sprint => 
+        sprint.id !== 'priority' && !sprint.is_backlog
+      );
+
+      // Find the sprint being moved
+      const movedSprint = reorderableSprints.find(sprint => sprint.id === sprintId);
+      if (!movedSprint) throw new Error('Sprint not found or not reorderable');
+
+      // Remove the moved sprint from the array
+      const otherSprints = reorderableSprints.filter(sprint => sprint.id !== sprintId);
+
+      // Insert the moved sprint at the new position
+      otherSprints.splice(newPosition, 0, movedSprint);
+
+      // Update positions for all reorderable sprints (starting from position 1)
+      const updatePromises = otherSprints.map((sprint, index) => 
+        supabase
+          .from('sprints')
+          .update({
+            position: index + 1, // Start from position 1 (priority is always 0)
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', sprint.id)
+      );
+
+      const results = await Promise.all(updatePromises);
+      
+      // Check for any errors in the batch update
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        throw new Error(`Failed to update ${errors.length} sprints: ${errors[0].error?.message}`);
+      }
+
+      console.log('Sprint moved successfully');
+    } catch (err) {
+      console.error('Error moving sprint:', err);
+      setError(err instanceof Error ? err.message : 'Failed to move sprint');
+    } finally {
+      setOperationLoadingState(operationId, false);
+    }
+  }, [user, setOperationLoadingState]);
+
   // Delete sprint
   const deleteSprint = useCallback(async (sprintId: string) => {
     if (!user) {
@@ -824,6 +886,7 @@ export const useSupabaseStories = () => {
     operationLoading,
     addStory,
     addSprint,
+    moveSprint,
     deleteSprint,
     toggleStory,
     moveStory,
