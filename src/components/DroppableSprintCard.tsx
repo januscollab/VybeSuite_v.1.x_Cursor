@@ -40,7 +40,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
   onOpenSprint,
   onCloseSprint,
   onDeleteSprint,
-  onToggleStory
+  onToggleStory,
   onEditStory,
   onCloseBoard
 }) => {
