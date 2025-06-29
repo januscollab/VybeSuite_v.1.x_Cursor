@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { Story, Sprint, SprintStats } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useUserSettings } from './useUserSettings';
 import { useArchive } from './useArchive';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
@@ -12,6 +13,7 @@ const SYNC_THRESHOLD = 5 * 60 * 1000; // 5 minutes
 
 export const useSupabaseStories = () => {
   const { user } = useAuth();
+  const { userProfile } = useUserSettings();
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +87,7 @@ export const useSupabaseStories = () => {
 
   // Add a new story
   const addStory = useCallback(async (sprintId: string, storyData: { title: string; description?: string; tags?: string[] }) => {
-    if (!user) return;
+    if (!user || !userProfile) return;
 
     const operationId = `add-story-${Date.now()}`;
     setOperationLoading(prev => ({ ...prev, [operationId]: true }));
@@ -107,7 +109,7 @@ export const useSupabaseStories = () => {
 
         let lastNumber = 0;
         if (lastStory?.[0]?.number) {
-          // Extract numeric part from format like "STORY-001"
+          // Extract numeric part from format like "PREFIX-001"
           const match = lastStory[0].number.match(/(\d+)$/);
           if (match) {
             lastNumber = parseInt(match[1], 10);
@@ -116,7 +118,10 @@ export const useSupabaseStories = () => {
         
         // Add random offset to prevent collisions in concurrent requests
         const offset = attempts > 0 ? Math.floor(Math.random() * 10) + 1 : 1;
-        newNumber = `STORY-${String(lastNumber + offset).padStart(3, '0')}`;
+        
+        // Use the story number prefix from user settings
+        const prefix = userProfile.settings.storyNumberPrefix || 'STORY';
+        newNumber = `${prefix}-${String(lastNumber + offset).padStart(3, '0')}`;
         
         // Check if this number already exists
         const { data: existingStory } = await supabase
@@ -133,8 +138,9 @@ export const useSupabaseStories = () => {
       } while (attempts < maxAttempts);
       
       if (attempts >= maxAttempts) {
-        // Fallback to timestamp-based number
-        newNumber = `STORY-${Date.now().toString().slice(-6)}`;
+        // Fallback to timestamp-based number with user's prefix
+        const prefix = userProfile.settings.storyNumberPrefix || 'STORY';
+        newNumber = `${prefix}-${Date.now().toString().slice(-6)}`;
       }
 
       // Validate required fields
@@ -208,7 +214,7 @@ export const useSupabaseStories = () => {
         return rest;
       });
     }
-  }, [user]);
+  }, [user, userProfile]);
 
   // Update an existing story
   const updateStory = useCallback(async (storyId: string, storyData: { title: string; description?: string; tags?: string[] }) => {
