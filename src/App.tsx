@@ -8,7 +8,7 @@ import { AddStoryModal } from './components/AddStoryModal';
 import { SettingsModal } from './components/SettingsModal';
 import { OpenSprintModal } from './components/OpenSprintModal';
 import { AddSprintModal } from './components/AddSprintModal';
-import { LoadingSpinner } from './components/LoadingSpinner';
+import { PulsingDotsLoader } from './components/LoadingSpinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useSupabaseStories } from './hooks/useSupabaseStories';
 import { loadAISettings, saveAISettings } from './utils/aiSettings';
@@ -150,7 +150,7 @@ function AppContent() {
           {loading && (
             <div className="min-h-screen bg-bg-canvas flex items-center justify-center">
               <div className="text-center">
-                <LoadingSpinner size="lg" className="mx-auto mb-4" />
+                <PulsingDotsLoader size="lg" className="mx-auto mb-4" />
                 <p className="text-text-secondary">Loading your sprint board...</p>
               </div>
             </div>
