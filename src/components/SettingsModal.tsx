@@ -3,7 +3,7 @@ import { X, Eye, EyeOff, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { AISettings } from '../types';
 import { AI_PROVIDERS } from '../constants/ai';
 import { validateApiKey } from '../utils/aiSettings';
-import { testConnection } from '../utils/aiService';
+import { testConnection, AIServiceError } from '../utils/aiService';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -26,8 +26,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     anthropic: boolean;
   }>({ openai: false, anthropic: false });
   const [connectionResults, setConnectionResults] = useState<{
-    openai: boolean | null;
-    anthropic: boolean | null;
+    openai: { success: boolean; error?: string } | null;
+    anthropic: { success: boolean; error?: string } | null;
   }>({ openai: null, anthropic: null });
 
   // Reset form when modal opens/closes
@@ -61,7 +61,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const model = provider === 'openai' ? formData.selectedOpenAIModel : formData.selectedAnthropicModel;
 
     if (!validateApiKey(provider, apiKey)) {
-      setConnectionResults(prev => ({ ...prev, [provider]: false }));
+      setConnectionResults(prev => ({ 
+        ...prev, 
+        [provider]: { success: false, error: 'Invalid API key format' }
+      }));
       return;
     }
 
@@ -70,10 +73,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
     try {
       const success = await testConnection(provider, apiKey, model);
-      setConnectionResults(prev => ({ ...prev, [provider]: success }));
+      setConnectionResults(prev => ({ 
+        ...prev, 
+        [provider]: { success }
+      }));
     } catch (error) {
+      let errorMessage = 'Connection failed';
+      
+      if (error instanceof AIServiceError) {
+        if (error.isCorsError) {
+          errorMessage = 'CORS restriction - use backend proxy in production';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       console.error(`${provider} connection test failed:`, error);
-      setConnectionResults(prev => ({ ...prev, [provider]: false }));
+      setConnectionResults(prev => ({ 
+        ...prev, 
+        [provider]: { success: false, error: errorMessage }
+      }));
     } finally {
       setTestingConnections(prev => ({ ...prev, [provider]: false }));
     }
@@ -91,11 +110,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     if (testingConnections[provider]) {
       return <Loader2 className="w-3 h-3 animate-spin text-text-quaternary" />;
     }
-    if (connectionResults[provider] === true) {
-      return <div className="w-2 h-2 bg-success rounded-full"></div>;
+    
+    const result = connectionResults[provider];
+    if (result?.success) {
+      return <div className="w-2 h-2 bg-success rounded-full" title="Connection successful"></div>;
     }
-    if (connectionResults[provider] === false) {
-      return <div className="w-2 h-2 bg-error rounded-full"></div>;
+    if (result && !result.success) {
+      return (
+        <div 
+          className="w-2 h-2 bg-error rounded-full" 
+          title={result.error || 'Connection failed'}
+        ></div>
+      );
     }
     return null;
   };
@@ -213,14 +239,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <p className="text-xs text-devsuite-primary">
                       Get your API key from Anthropic Console
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => handleTestConnection('anthropic')}
-                      disabled={!formData.anthropicApiKey || testingConnections.anthropic}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary border border-border-default rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      🔍 Test Connection
-                    </button>
+                    <div className="flex flex-col items-end gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleTestConnection('anthropic')}
+                        disabled={!formData.anthropicApiKey || testingConnections.anthropic}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary border border-border-default rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        🔍 Test Connection
+                      </button>
+                      {connectionResults.anthropic && !connectionResults.anthropic.success && (
+                        <p className="text-xs text-error max-w-48 text-right">
+                          {connectionResults.anthropic.error}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -281,14 +314,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <p className="text-xs text-devsuite-primary">
                       Get your API key from OpenAI Platform
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => handleTestConnection('openai')}
-                      disabled={!formData.openaiApiKey || testingConnections.openai}
-                      className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary border border-border-default rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      🔍 Test Connection
-                    </button>
+                    <div className="flex flex-col items-end gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleTestConnection('openai')}
+                        disabled={!formData.openaiApiKey || testingConnections.openai}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary border border-border-default rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        🔍 Test Connection
+                      </button>
+                      {connectionResults.openai && !connectionResults.openai.success && (
+                        <p className="text-xs text-error max-w-48 text-right">
+                          {connectionResults.openai.error}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
 

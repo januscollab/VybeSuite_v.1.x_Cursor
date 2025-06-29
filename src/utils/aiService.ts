@@ -1,7 +1,7 @@
 import { AIGenerationRequest, AIGenerationResponse } from '../types';
 
 export class AIServiceError extends Error {
-  constructor(message: string, public provider: string, public statusCode?: number) {
+  constructor(message: string, public provider: string, public statusCode?: number, public isCorsError?: boolean) {
     super(message);
     this.name = 'AIServiceError';
   }
@@ -84,6 +84,17 @@ Make the title follow proper user story format. Include detailed acceptance crit
     if (error instanceof AIServiceError) {
       throw error;
     }
+    
+    // Check if this is a CORS/network error
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      throw new AIServiceError(
+        'Unable to connect to OpenAI API. This may be due to CORS restrictions when running locally. In production, consider using a backend proxy to handle API calls.',
+        'openai',
+        undefined,
+        true
+      );
+    }
+    
     throw new AIServiceError(
       error instanceof Error ? error.message : 'Unknown error occurred',
       'openai'
@@ -168,6 +179,17 @@ Make the title follow proper user story format. Include detailed acceptance crit
     if (error instanceof AIServiceError) {
       throw error;
     }
+    
+    // Check if this is a CORS/network error
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      throw new AIServiceError(
+        'Unable to connect to Anthropic API. This may be due to CORS restrictions when running locally. In production, consider using a backend proxy to handle API calls.',
+        'anthropic',
+        undefined,
+        true
+      );
+    }
+    
     throw new AIServiceError(
       error instanceof Error ? error.message : 'Unknown error occurred',
       'anthropic'
@@ -197,7 +219,11 @@ export async function testConnection(provider: 'openai' | 'anthropic', apiKey: s
     });
     return true;
   } catch (error) {
-    console.error(`${provider} connection test failed:`, error);
+    if (error instanceof AIServiceError && error.isCorsError) {
+      console.warn(`${provider} connection test failed due to CORS restrictions:`, error.message);
+    } else {
+      console.error(`${provider} connection test failed:`, error);
+    }
     return false;
   }
 }
