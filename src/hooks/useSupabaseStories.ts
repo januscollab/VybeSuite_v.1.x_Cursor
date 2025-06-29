@@ -80,8 +80,15 @@ export const useSupabaseStories = () => {
           });
 
         if (createError) {
-          console.error('Error creating backlog sprint:', createError);
-          // Don't throw here as this is not critical for app functionality
+          // Handle duplicate key constraint specifically (error code 23505)
+          if (createError.code === '23505') {
+            console.warn('Backlog sprint already exists (race condition detected):', createError.message);
+            // This is not critical - another process created the sprint
+            return;
+          } else {
+            console.error('Error creating backlog sprint:', createError);
+            // Don't throw here as this is not critical for app functionality
+          }
         } else {
           console.log('Backlog sprint created successfully');
         }
