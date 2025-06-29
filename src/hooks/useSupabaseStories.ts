@@ -82,6 +82,40 @@ export const useSupabaseStories = () => {
           .upsert(defaultSprints, { onConflict: 'id' });
 
         if (upsertError) throw upsertError;
+      } else {
+        // Ensure Priority Sprint exists and is correctly positioned
+        const prioritySprint = existingSprints.find(s => s.id === 'priority');
+        if (!prioritySprint) {
+          // Create Priority Sprint if it doesn't exist
+          const { error: priorityError } = await supabase
+            .from('sprints')
+            .insert([{
+              id: 'priority',
+              title: 'Priority Sprint',
+              icon: '🔥',
+              is_backlog: false,
+              is_draggable: false,
+              position: 0,
+              user_id: user.id
+            }]);
+          
+          if (priorityError) throw priorityError;
+        } else if (prioritySprint.position !== 0) {
+          // Fix Priority Sprint position if it's wrong
+          const { error: fixPositionError } = await supabase
+            .from('sprints')
+            .update({ 
+              position: 0,
+              is_backlog: false,
+              is_draggable: false,
+              title: 'Priority Sprint',
+              icon: '🔥'
+            })
+            .eq('id', 'priority')
+            .eq('user_id', user.id);
+          
+          if (fixPositionError) throw fixPositionError;
+        }
       }
 
       // Load all data
@@ -482,9 +516,10 @@ export const useSupabaseStories = () => {
 
       if (positionError) throw positionError;
 
+      // Ensure new sprints start at position 1 or higher (Priority Sprint is always position 0)
       const nextPosition = existingSprints && existingSprints.length > 0 
-        ? existingSprints[0].position + 1 
-        : 0;
+        ? Math.max(existingSprints[0].position + 1, 1)
+        : 1;
 
       // Generate a unique ID for the sprint
       const sprintId = `sprint-${Date.now()}`;
