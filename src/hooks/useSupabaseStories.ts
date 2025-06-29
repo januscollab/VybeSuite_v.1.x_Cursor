@@ -27,19 +27,33 @@ export const useSupabaseStories = () => {
     if (!user) return;
 
     try {
-      // Check if backlog sprint already exists
+      // Check if backlog sprint already exists (including archived ones)
       const { data: existingBacklog, error: checkError } = await supabase
         .from('sprints')
-        .select('id')
+        .select('id, archived_at')
         .eq('user_id', user.id)
         .eq('is_backlog', true)
-        .is('archived_at', null)
         .limit(1);
 
       if (checkError) throw checkError;
 
-      // If backlog doesn't exist, create it
-      if (!existingBacklog || existingBacklog.length === 0) {
+      if (existingBacklog && existingBacklog.length > 0) {
+        // If backlog exists but is archived, unarchive it
+        if (existingBacklog[0].archived_at) {
+          const { error: unarchiveError } = await supabase
+            .from('sprints')
+            .update({ 
+              archived_at: null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingBacklog[0].id);
+
+          if (unarchiveError) throw unarchiveError;
+          console.log('Backlog sprint unarchived successfully');
+        }
+        // If backlog exists and is not archived, do nothing
+      } else {
+        // If backlog doesn't exist, create it
         // Get the highest position to place backlog at the end
         const { data: allSprints } = await supabase
           .from('sprints')
