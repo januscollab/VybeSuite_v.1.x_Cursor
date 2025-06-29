@@ -19,6 +19,7 @@ function App() {
     sprintTitle: ''
   });
 
+  // Always call hooks at the top level - never conditionally
   const { 
     sprints, 
     loading, 
@@ -81,87 +82,88 @@ function App() {
     moveStory(storyId, destinationSprintId, newPosition);
   };
 
-  // Loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-bg-canvas flex items-center justify-center">
-        <div className="text-center">
-          <LoadingSpinner size="lg" className="mx-auto mb-4" />
-          <p className="text-text-secondary">Loading your sprint board...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="min-h-screen bg-bg-canvas flex items-center justify-center p-6">
-        <div className="bg-bg-primary border border-border-default rounded-xl p-8 max-w-md w-full text-center shadow-devsuite">
-          <div className="flex justify-center mb-4">
-            {error.includes('Missing Supabase') ? (
-              <Database className="w-12 h-12 text-warning" />
-            ) : (
-              <AlertTriangle className="w-12 h-12 text-error" />
-            )}
-          </div>
-          <h1 className="text-xl font-bold text-text-primary mb-2">
-            {error.includes('Missing Supabase') ? 'Database Setup Required' : 'Connection Error'}
-          </h1>
-          <p className="text-text-secondary mb-6">
-            {error.includes('Missing Supabase') 
-              ? 'Please click "Connect to Supabase" in the top right to set up your database.'
-              : error
-            }
-          </p>
-          <button
-            onClick={refreshData}
-            className="flex items-center gap-2 px-4 py-2 bg-devsuite-primary text-text-inverse rounded-lg hover:bg-devsuite-primary-hover transition-colors mx-auto"
-          >
-            <Database className="w-4 h-4" />
-            Retry Connection
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-bg-canvas">
-        <Header
-          activeView={activeView}
-          onViewChange={setActiveView}
-          onAddSprint={handleAddSprint}
-          onOpenSettings={handleOpenSettings}
-        />
-        
-        {activeView === 'active' ? (
-          <DragDropSprintBoard
-            sprints={sprints}
-            getSprintStats={getSprintStats}
-            onAddStory={handleAddStory}
-            onOpenSprint={handleOpenSprint}
-            onCloseSprint={handleCloseSprint}
-            onToggleStory={handleToggleStory}
-            onMoveStory={handleMoveStory}
-          />
-        ) : (
-          <div className="p-6 max-w-none mx-auto">
-            <h1 className="text-3xl font-bold text-text-primary mb-8">Archive</h1>
-            <div className="bg-bg-primary border border-border-default rounded-xl p-8 text-center">
-              <p className="text-text-tertiary">Archive view will be implemented in Sprint 5</p>
+        {/* Loading state overlay */}
+        {loading && (
+          <div className="min-h-screen bg-bg-canvas flex items-center justify-center">
+            <div className="text-center">
+              <LoadingSpinner size="lg" className="mx-auto mb-4" />
+              <p className="text-text-secondary">Loading your sprint board...</p>
             </div>
           </div>
         )}
 
-        <AddStoryModal
-          isOpen={addStoryModal.isOpen}
-          sprintId={addStoryModal.sprintId}
-          sprintTitle={addStoryModal.sprintTitle}
-          onClose={handleCloseAddStoryModal}
-          onSubmit={handleSubmitStory}
-        />
+        {/* Error state overlay */}
+        {error && (
+          <div className="min-h-screen bg-bg-canvas flex items-center justify-center p-6">
+            <div className="bg-bg-primary border border-border-default rounded-xl p-8 max-w-md w-full text-center shadow-devsuite">
+              <div className="flex justify-center mb-4">
+                {error.includes('Missing Supabase') ? (
+                  <Database className="w-12 h-12 text-warning" />
+                ) : (
+                  <AlertTriangle className="w-12 h-12 text-error" />
+                )}
+              </div>
+              <h1 className="text-xl font-bold text-text-primary mb-2">
+                {error.includes('Missing Supabase') ? 'Database Setup Required' : 'Connection Error'}
+              </h1>
+              <p className="text-text-secondary mb-6">
+                {error.includes('Missing Supabase') 
+                  ? 'Please click "Connect to Supabase" in the top right to set up your database.'
+                  : error
+                }
+              </p>
+              <button
+                onClick={refreshData}
+                className="flex items-center gap-2 px-4 py-2 bg-devsuite-primary text-text-inverse rounded-lg hover:bg-devsuite-primary-hover transition-colors mx-auto"
+              >
+                <Database className="w-4 h-4" />
+                Retry Connection
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Main content - only show when not loading or in error state */}
+        {!loading && !error && (
+          <>
+            <Header
+              activeView={activeView}
+              onViewChange={setActiveView}
+              onAddSprint={handleAddSprint}
+              onOpenSettings={handleOpenSettings}
+            />
+            
+            {activeView === 'active' ? (
+              <DragDropSprintBoard
+                sprints={sprints}
+                getSprintStats={getSprintStats}
+                onAddStory={handleAddStory}
+                onOpenSprint={handleOpenSprint}
+                onCloseSprint={handleCloseSprint}
+                onToggleStory={handleToggleStory}
+                onMoveStory={handleMoveStory}
+              />
+            ) : (
+              <div className="p-6 max-w-none mx-auto">
+                <h1 className="text-3xl font-bold text-text-primary mb-8">Archive</h1>
+                <div className="bg-bg-primary border border-border-default rounded-xl p-8 text-center">
+                  <p className="text-text-tertiary">Archive view will be implemented in Sprint 5</p>
+                </div>
+              </div>
+            )}
+
+            <AddStoryModal
+              isOpen={addStoryModal.isOpen}
+              sprintId={addStoryModal.sprintId}
+              sprintTitle={addStoryModal.sprintTitle}
+              onClose={handleCloseAddStoryModal}
+              onSubmit={handleSubmitStory}
+            />
+          </>
+        )}
       </div>
     </ErrorBoundary>
   );
