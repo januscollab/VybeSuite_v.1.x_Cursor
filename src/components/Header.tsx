@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Settings, Plus } from 'lucide-react';
+import { UserMenu } from './UserMenu';
 
 interface HeaderProps {
   activeView: 'active' | 'archive';
@@ -30,6 +31,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Navigation */}
           <nav className="flex items-center gap-2">
+            {/* User Menu */}
+            <UserMenu />
+
             {/* Toggle Switch */}
             <div className="flex items-center gap-3 bg-bg-muted rounded-lg p-1">
               <button
