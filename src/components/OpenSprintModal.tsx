@@ -31,6 +31,7 @@ export const OpenSprintModal: React.FC<OpenSprintModalProps> = ({
         }))
       });
       setPrompt(generatedPrompt);
+      console.log('Generated Prompt Content (copy this string):', generatedPrompt);
     }
   }, [isOpen, sprint, getOpenSprintPrompt]);
 
