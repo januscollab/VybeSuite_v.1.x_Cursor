@@ -1,7 +1,7 @@
 import React from 'react';
 import { DragDropContext, DropResult, Droppable, Draggable } from '@hello-pangea/dnd';
 import { DroppableSprintCard } from './DroppableSprintCard';
-import { Sprint, SprintStats } from '../types';
+import { Sprint, SprintStats, Story } from '../types';
 
 /**
  * SPRINT LAYOUT RULES - CRITICAL DESIGN REQUIREMENT
@@ -27,6 +27,8 @@ interface DragDropSprintBoardProps {
   onToggleStory: (storyId: string) => void;
   onMoveStory: (storyId: string, destinationSprintId: string, newPosition: number) => void;
   onMoveSprint?: (sprintId: string, newPosition: number) => void;
+  onEditStory?: (story: Story) => void;
+  onCloseBoard?: () => void;
 }
 
 export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
@@ -39,7 +41,9 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
   onDeleteSprint,
   onToggleStory,
   onMoveStory,
-  onMoveSprint
+  onMoveSprint,
+  onEditStory,
+  onCloseBoard
 }) => {
   const handleDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
@@ -141,6 +145,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
                             onCloseSprint={(type) => onCloseSprint(sprint.id, type)}
                             onDeleteSprint={() => onDeleteSprint(sprint.id)}
                             onToggleStory={onToggleStory}
+                            onEditStory={onEditStory}
                           />
                         </div>
                       )}
@@ -161,6 +166,8 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
                         onCloseSprint={(type) => onCloseSprint(sprint.id, type)}
                         onDeleteSprint={() => onDeleteSprint(sprint.id)}
                         onToggleStory={onToggleStory}
+                        onEditStory={onEditStory}
+                        onCloseBoard={sprint.id === 'priority' ? onCloseBoard : undefined}
                       />
                     );
                   })}
@@ -197,6 +204,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
               onCloseSprint={(type) => onCloseSprint(backlogSprint.id, type)}
               onDeleteSprint={() => onDeleteSprint(backlogSprint.id)}
               onToggleStory={onToggleStory}
+              onEditStory={onEditStory}
             />
           </div>
         )}

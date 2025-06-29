@@ -4,7 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Header } from './components/Header';
 import { DragDropSprintBoard } from './components/DragDropSprintBoard';
 import { ArchiveView } from './components/ArchiveView';
-import { AddStoryModal } from './components/AddStoryModal';
+import { StoryModal } from './components/StoryModal';
 import { SettingsModal } from './components/SettingsModal';
 import { OpenSprintModal } from './components/OpenSprintModal';
 import { AddSprintModal } from './components/AddSprintModal';
@@ -13,7 +13,7 @@ import { PulsingDotsLoader } from './components/LoadingSpinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useSupabaseStories } from './hooks/useSupabaseStories';
 import { loadAISettings, saveAISettings } from './utils/aiSettings';
-import { AISettings, Sprint } from './types';
+import { AISettings, Sprint, Story } from './types';
 import { AlertTriangle, Database } from 'lucide-react';
 
 function App() {
@@ -46,6 +46,11 @@ function AppContent() {
     isOpen: false,
     sprint: null
   });
+  const [editStoryModal, setEditStoryModal] = useState<{
+    isOpen: boolean;
+    story: Story | null;
+  }>({ isOpen: false, story: null });
+  const [showDashboard, setShowDashboard] = useState(false);
 
   // Always call hooks at the top level - never conditionally
   const { 
@@ -54,6 +59,8 @@ function AppContent() {
     error, 
     operationLoading,
     addStory, 
+    updateStory,
+    deleteStory,
     addSprint,
     deleteSprint,
     toggleStory, 
@@ -62,6 +69,10 @@ function AppContent() {
     getSprintStats,
     refreshData 
   } = useSupabaseStories();
+
+  const handleCloseBoard = () => {
+    setShowDashboard(true);
+  };
 
   const handleAddSprint = () => {
     setAddSprintModal(true);
@@ -111,6 +122,22 @@ function AppContent() {
     addStory(sprintId, { title, description, tags });
   };
 
+  const handleEditStory = (story: Story) => {
+    setEditStoryModal({ isOpen: true, story });
+  };
+
+  const handleCloseEditStoryModal = () => {
+    setEditStoryModal({ isOpen: false, story: null });
+  };
+
+  const handleUpdateStory = (storyId: string, title: string, description: string, tags: string[]) => {
+    updateStory(storyId, { title, description, tags });
+  };
+
+  const handleDeleteStory = (storyId: string) => {
+    deleteStory(storyId);
+  };
+
   const handleOpenSprint = (sprintId: string) => {
     const sprint = sprints.find(s => s.id === sprintId);
     if (sprint) {
@@ -143,6 +170,24 @@ function AppContent() {
   const handleMoveStory = (storyId: string, destinationSprintId: string, newPosition: number) => {
     moveStory(storyId, destinationSprintId, newPosition);
   };
+
+  // Show dashboard view if requested
+  if (showDashboard) {
+    return (
+      <div className="min-h-screen bg-bg-canvas flex items-center justify-center p-6">
+        <div className="bg-bg-primary border border-border-default rounded-xl p-8 max-w-md w-full text-center shadow-devsuite">
+          <h1 className="text-2xl font-bold text-text-primary mb-4">Dashboard</h1>
+          <p className="text-text-secondary mb-6">Welcome to your project dashboard.</p>
+          <button
+            onClick={() => setShowDashboard(false)}
+            className="px-4 py-2 bg-devsuite-primary text-text-inverse rounded-lg hover:bg-devsuite-primary-hover transition-colors"
+          >
+            Back to Sprint Board
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleMoveSprint = (sprintId: string, newPosition: number) => {
     moveSprint(sprintId, newPosition);
@@ -216,18 +261,32 @@ function AppContent() {
                   onToggleStory={handleToggleStory}
                   onMoveStory={handleMoveStory}
                  onMoveSprint={handleMoveSprint}
+                  onEditStory={handleEditStory}
+                  onCloseBoard={handleCloseBoard}
                 />
               ) : (
                 <ArchiveView />
               )}
 
-              <AddStoryModal
+              <StoryModal
                 isOpen={addStoryModal.isOpen}
                 sprintId={addStoryModal.sprintId}
                 sprintTitle={addStoryModal.sprintTitle}
                 aiSettings={aiSettings}
                 onClose={handleCloseAddStoryModal}
                 onSubmit={handleSubmitStory}
+              />
+
+              <StoryModal
+                isOpen={editStoryModal.isOpen}
+                sprintId={editStoryModal.story?.sprintId || ''}
+                sprintTitle=""
+                aiSettings={aiSettings}
+                story={editStoryModal.story}
+                onClose={handleCloseEditStoryModal}
+                onSubmit={handleSubmitStory}
+                onUpdate={handleUpdateStory}
+                onDelete={handleDeleteStory}
               />
 
               <SettingsModal

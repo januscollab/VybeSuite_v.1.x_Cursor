@@ -210,6 +210,90 @@ export const useSupabaseStories = () => {
     }
   }, [user]);
 
+  // Update an existing story
+  const updateStory = useCallback(async (storyId: string, storyData: { title: string; description?: string; tags?: string[] }) => {
+    if (!user) return;
+
+    const operationId = `update-story-${storyId}`;
+    setOperationLoading(prev => ({ ...prev, [operationId]: true }));
+
+    try {
+      // Validate required fields
+      if (!storyData.title || storyData.title.trim() === '') {
+        throw new Error('Story title is required');
+      }
+
+      const { data, error } = await supabase
+        .from('stories')
+        .update({
+          title: storyData.title,
+          description: storyData.description || '',
+          tags: storyData.tags || [],
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', storyId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update local state
+      setSprints(prev => prev.map(sprint => ({
+        ...sprint,
+        stories: sprint.stories.map(story => 
+          story.id === storyId 
+            ? {
+                ...story,
+                title: data.title,
+                description: data.description,
+                tags: data.tags || [],
+                updatedAt: data.updated_at
+              }
+            : story
+        )
+      })));
+    } catch (err) {
+      console.error('Error updating story:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update story');
+    } finally {
+      setOperationLoading(prev => {
+        const { [operationId]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [user]);
+
+  // Delete a story
+  const deleteStory = useCallback(async (storyId: string) => {
+    if (!user) return;
+
+    const operationId = `delete-story-${storyId}`;
+    setOperationLoading(prev => ({ ...prev, [operationId]: true }));
+
+    try {
+      const { error } = await supabase
+        .from('stories')
+        .delete()
+        .eq('id', storyId);
+
+      if (error) throw error;
+
+      // Update local state
+      setSprints(prev => prev.map(sprint => ({
+        ...sprint,
+        stories: sprint.stories.filter(story => story.id !== storyId)
+      })));
+    } catch (err) {
+      console.error('Error deleting story:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete story');
+    } finally {
+      setOperationLoading(prev => {
+        const { [operationId]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [user]);
+
   // Add a new sprint
   const addSprint = useCallback(async (title: string, icon: string, description: string, isBacklog: boolean, isDraggable: boolean) => {
     if (!user) return;
@@ -575,6 +659,8 @@ export const useSupabaseStories = () => {
     error,
     operationLoading,
     addStory,
+    updateStory,
+    deleteStory,
     addSprint,
     moveSprint,
     deleteSprint,

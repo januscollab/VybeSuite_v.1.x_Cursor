@@ -7,6 +7,7 @@ interface DraggableStoryProps {
   story: Story;
   index: number;
   onToggle: (storyId: string) => void;
+  onEdit?: (story: Story) => void;
   isToggling?: boolean;
 }
 
@@ -14,12 +15,24 @@ export const DraggableStory: React.FC<DraggableStoryProps> = ({
   story,
   index,
   onToggle,
+  onEdit,
   isToggling = false
 }) => {
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isToggling) {
       onToggle(story.id);
+    }
+  };
+
+  const handleStoryClick = (e: React.MouseEvent) => {
+    // Only trigger edit if we're not clicking on the checkbox
+    if (e.target !== e.currentTarget && !(e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    
+    if (onEdit) {
+      onEdit(story);
     }
   };
 
@@ -30,11 +43,12 @@ export const DraggableStory: React.FC<DraggableStoryProps> = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
+          onClick={handleStoryClick}
           className={`bg-bg-secondary border border-border-subtle rounded-lg p-3 flex items-center gap-3 transition-all hover:bg-bg-muted hover:border-border-default hover:shadow-sm ${
             snapshot.isDragging 
               ? 'shadow-devsuite-hover border-devsuite-primary bg-bg-primary transform rotate-2' 
               : ''
-          } ${isToggling ? 'opacity-75' : ''}`}
+          } ${isToggling ? 'opacity-75' : ''} ${onEdit ? 'cursor-pointer' : ''}`}
         >
           <span className="text-text-quaternary cursor-grab font-bold text-xs">::</span>
           

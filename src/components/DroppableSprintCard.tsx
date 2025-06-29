@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { DraggableProvidedDragHandleProps } from '@hello-pangea/dnd';
 import { Droppable } from '@hello-pangea/dnd';
 import { validateSprintLayout } from '../constants/layout';
-import { Plus, Play, FileText, GripVertical, Trash2 } from 'lucide-react';
+import { Plus, Play, FileText, GripVertical, Trash2, X } from 'lucide-react';
 import { DraggableStory } from './DraggableStory';
 import { DeleteSprintConfirmation } from './DeleteSprintConfirmation';
 import { Story, SprintStats } from '../types';
@@ -22,6 +22,8 @@ interface DroppableSprintCardProps {
   onCloseSprint: (type: 'completed' | 'all') => void;
   onDeleteSprint?: () => void;
   onToggleStory: (storyId: string) => void;
+  onEditStory?: (story: Story) => void;
+  onCloseBoard?: () => void;
 }
 
 export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
@@ -39,6 +41,8 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
   onCloseSprint,
   onDeleteSprint,
   onToggleStory
+  onEditStory,
+  onCloseBoard
 }) => {
   const [showCloseDropdown, setShowCloseDropdown] = useState(false);
   const [dropdownTimeout, setDropdownTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -97,6 +101,17 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
         ? 'border-devsuite-primary border-2 bg-gradient-to-br from-bg-primary to-devsuite-primary-subtle'
         : 'border-border-default'
     }`}>
+      {/* Close Button for Priority Sprint */}
+      {isPrioritySprint && onCloseBoard && (
+        <button
+          onClick={onCloseBoard}
+          className="absolute top-3 right-3 w-8 h-8 border-none bg-transparent cursor-pointer rounded-md flex items-center justify-center text-text-quaternary hover:bg-bg-canvas hover:text-text-secondary transition-all"
+          title="Close Priority Sprint Board"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      )}
+
       {/* Sprint Header */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
@@ -143,7 +158,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1.5">
+        <div className={`flex items-center gap-1.5 ${isPrioritySprint ? 'mr-10' : ''}`}>
           <button
             onClick={onAddStory}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary rounded-md transition-all"
@@ -236,6 +251,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
                 story={story}
                 index={index}
                 onToggle={onToggleStory}
+                onEdit={onEditStory}
                 isToggling={operationLoading[`toggle-story-${story.id}`]}
               />
             ))}
