@@ -72,9 +72,9 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
       <main className="p-6 max-w-none mx-auto">
         <h1 className="text-3xl font-bold text-text-primary mb-8">Sprint Board</h1>
         
-        {/* Priority Sprint - Always First */}
+        {/* Priority Sprint - Always First and 50% Width */}
         {prioritySprint && (
-          <div className="mb-5">
+          <div className="grid grid-cols-2 gap-5 mb-5">
             <DroppableSprintCard
               id={prioritySprint.id}
               title={prioritySprint.title}
@@ -88,6 +88,8 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
               onDeleteSprint={() => onDeleteSprint(prioritySprint.id)}
               onToggleStory={onToggleStory}
             />
+            {/* Empty space to maintain 50% width for Priority Sprint */}
+            <div></div>
           </div>
         )}
         
