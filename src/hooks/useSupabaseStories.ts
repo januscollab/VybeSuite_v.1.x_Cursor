@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { Story, Sprint, SprintStats } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 import { useArchive } from './useArchive';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 export const useSupabaseStories = () => {
+  const { user } = useAuth();
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -341,6 +343,10 @@ export const useSupabaseStories = () => {
 
   // Generate next story number
   const generateStoryNumber = useCallback(async () => {
+    if (!user) return;
+
+    if (!user) return;
+
     try {
       const { data, error } = await supabase
         .from('stories')
@@ -448,7 +454,12 @@ export const useSupabaseStories = () => {
       // Get all stories from the database to ensure we have the latest state
       const { data: allStories, error: fetchError } = await supabase
         .from('stories')
-        .select('*')
+        .select(`
+          *,
+          sprints!inner(user_id)
+        `)
+        .eq('sprints.user_id', user.id)
+        .eq('user_id', user.id)
         .order('position');
 
       if (fetchError) throw fetchError;

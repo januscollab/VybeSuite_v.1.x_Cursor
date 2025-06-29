@@ -14,6 +14,7 @@ export interface Story {
 
 export interface Sprint {
   id: string;
+  user_id: string;
   title: string;
   icon: string;
   isBacklog?: boolean;
