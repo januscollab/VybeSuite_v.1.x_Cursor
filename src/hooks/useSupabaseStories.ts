@@ -222,16 +222,90 @@ export const useSupabaseStories = () => {
   // Move story between sprints or reorder within sprint
   const moveStory = useCallback(async (storyId: string, destinationSprintId: string, newPosition: number) => {
     try {
-      const { error } = await supabase
+      // Get all stories from the database to ensure we have the latest state
+      const { data: allStories, error: fetchError } = await supabase
         .from('stories')
-        .update({
-          sprint_id: destinationSprintId,
-          position: newPosition,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', storyId);
+        .select('*')
+        .order('position');
 
-      if (error) throw error;
+      if (fetchError) throw fetchError;
+      if (!allStories) throw new Error('Failed to fetch stories');
+
+      // Find the story being moved
+      const movedStory = allStories.find(story => story.id === storyId);
+      if (!movedStory) throw new Error('Story not found');
+
+      const sourceSprintId = movedStory.sprint_id;
+
+      // Get stories for source and destination sprints
+      const sourceSprintStories = allStories
+        .filter(story => story.sprint_id === sourceSprintId && story.id !== storyId)
+        .sort((a, b) => a.position - b.position);
+
+      const destinationSprintStories = sourceSprintId === destinationSprintId
+        ? sourceSprintStories // Same sprint, so we already filtered out the moved story
+        : allStories
+            .filter(story => story.sprint_id === destinationSprintId)
+            .sort((a, b) => a.position - b.position);
+
+      // Create arrays for the new arrangements
+      const updatedStories: Array<{
+        id: string;
+        sprint_id: string;
+        position: number;
+        updated_at: string;
+      }> = [];
+
+      const now = new Date().toISOString();
+
+      // Re-index source sprint stories (if different from destination)
+      if (sourceSprintId !== destinationSprintId) {
+        sourceSprintStories.forEach((story, index) => {
+          updatedStories.push({
+            id: story.id,
+            sprint_id: sourceSprintId,
+            position: index,
+            updated_at: now
+          });
+        });
+      }
+
+      // Insert moved story at new position and re-index destination sprint
+      const newDestinationStories = [...destinationSprintStories];
+      newDestinationStories.splice(newPosition, 0, {
+        ...movedStory,
+        sprint_id: destinationSprintId
+      });
+
+      // Re-index all stories in destination sprint
+      newDestinationStories.forEach((story, index) => {
+        updatedStories.push({
+          id: story.id,
+          sprint_id: destinationSprintId,
+          position: index,
+          updated_at: now
+        });
+      });
+
+      // Perform batch update using individual updates (Supabase doesn't support batch upsert easily)
+      const updatePromises = updatedStories.map(update => 
+        supabase
+          .from('stories')
+          .update({
+            sprint_id: update.sprint_id,
+            position: update.position,
+            updated_at: update.updated_at
+          })
+          .eq('id', update.id)
+      );
+
+      const results = await Promise.all(updatePromises);
+      
+      // Check for any errors in the batch update
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        throw new Error(`Failed to update ${errors.length} stories: ${errors[0].error?.message}`);
+      }
 
       // Reload data to reflect changes
       await loadData();
