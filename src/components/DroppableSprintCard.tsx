@@ -222,7 +222,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
       </div>
 
       {/* Delete Button - Bottom Left for User-Generated Sprints Only (not backlog or priority) */}
-      {isUserGeneratedSprint && !isBacklog && !isPrioritySprint && (
+      {isUserGeneratedSprint && !isBacklogSprint && !isPrioritySprint && (
         <button
           onClick={handleDeleteSprint}
           disabled={isDeleteLoading || stories.length > 0}
