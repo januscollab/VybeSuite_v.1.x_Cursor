@@ -104,7 +104,8 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
                     handleCloseSprint(id, 'completed');
                     setShowCloseDropdown(false);
                   }}
-                  className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors border-b border-border-subtle"
+                  disabled={stats.done === 0}
+                  className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors border-b border-border-subtle disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-text-secondary"
                 >
                   Close Completed
                 </button>

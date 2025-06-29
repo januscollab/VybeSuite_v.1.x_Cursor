@@ -67,10 +67,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({ onAddSprint, onOpenSettings 
           
           {/* Account Settings Section */}
           <div className="py-1">
-            <div className="px-3 py-2">
-              <p className="text-xs font-semibold text-text-quaternary uppercase tracking-wide">Account Settings</p>
-            </div>
-            
             <button
               onClick={() => {
                 console.log('Profile settings clicked');
