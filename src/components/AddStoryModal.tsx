@@ -361,7 +361,7 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!formData.title.trim()}
+            disabled={!formData.title.trim() && !storyPrompt.trim()}
             className="flex items-center gap-1.5 px-3 py-2 bg-transparent text-text-secondary text-[13px] font-medium cursor-pointer border-none rounded-md transition-all hover:bg-devsuite-primary/10 hover:text-devsuite-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Sparkles className="w-5 h-5" />

@@ -63,13 +63,16 @@ Make the title follow proper user story format. Include detailed acceptance crit
 
     // Try to parse JSON response
     try {
-      const parsed = JSON.parse(content);
+      // Clean up the content - remove markdown code blocks if present
+      const cleanContent = content.replace(/```json\s*|\s*```/g, '').trim();
+      const parsed = JSON.parse(cleanContent);
       return {
         title: parsed.title || `As a user, I want to ${prompt} so that I can achieve my goals`,
         description: parsed.description || `Implement: ${prompt}`,
         tags: Array.isArray(parsed.tags) ? parsed.tags : ['feature']
       };
-    } catch {
+    } catch (parseError) {
+      console.warn('Failed to parse AI response as JSON:', parseError);
       // Fallback if JSON parsing fails
       return {
         title: `As a user, I want to ${prompt} so that I can achieve my goals`,
@@ -144,13 +147,16 @@ Make the title follow proper user story format. Include detailed acceptance crit
 
     // Try to parse JSON response
     try {
-      const parsed = JSON.parse(content);
+      // Clean up the content - remove markdown code blocks if present
+      const cleanContent = content.replace(/```json\s*|\s*```/g, '').trim();
+      const parsed = JSON.parse(cleanContent);
       return {
         title: parsed.title || `As a user, I want to ${prompt} so that I can achieve my goals`,
         description: parsed.description || `Implement: ${prompt}`,
         tags: Array.isArray(parsed.tags) ? parsed.tags : ['feature']
       };
-    } catch {
+    } catch (parseError) {
+      console.warn('Failed to parse AI response as JSON:', parseError);
       // Fallback if JSON parsing fails
       return {
         title: `As a user, I want to ${prompt} so that I can achieve my goals`,
