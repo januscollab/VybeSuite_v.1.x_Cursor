@@ -1,13 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Play, FileText, GripVertical } from 'lucide-react';
-
-interface Story {
-  id: string;
-  number: string;
-  title: string;
-  completed: boolean;
-  date: string;
-}
+import { Story } from '../types';
 
 interface SprintCardProps {
   id: string;

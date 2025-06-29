@@ -17,9 +17,9 @@ This document outlines the sprint-by-sprint plan for building the comprehensive 
 
 **Tasks**:
 1. ✅ **Configure Tailwind CSS for DevSuite Design System**
-2. 🔄 **Create Core `App.tsx` Structure**
-3. 🔄 **Integrate Lucide React Icons**
-4. 🔄 **Implement Basic Responsiveness**
+2. ✅ **Create Core `App.tsx` Structure**
+3. ✅ **Integrate Lucide React Icons**
+4. ✅ **Implement Basic Responsiveness**
 
 **Risk Assessment**: **LOW**
 - **Breaking Change Risk**: Minimal. This sprint primarily involves setting up the UI and integrating styling, with no existing application logic to break.
@@ -28,7 +28,7 @@ This document outlines the sprint-by-sprint plan for building the comprehensive 
 
 ---
 
-## Sprint 2: Story Management & Modals
+## Sprint 2: Story Management & Modals ✅ IN PROGRESS
 
 **Objective**: Implement the "Add Story" modal and basic story display/interaction, including local state management for stories.
 
@@ -39,7 +39,17 @@ This document outlines the sprint-by-sprint plan for building the comprehensive 
 - Basic local state management for stories (add, mark complete).
 - Stories displayed in sprint cards with completion checkboxes and strikethrough.
 
+**Tasks**:
+1. 🔄 **Create AddStoryModal Component**
+2. 🔄 **Implement Tag Management System**
+3. 🔄 **Add Local State Management for Stories**
+4. 🔄 **Integrate Modal with Sprint Cards**
+5. 🔄 **Add Mock AI Story Generation**
+
 **Risk Assessment**: **MEDIUM**
+- **Breaking Change Risk**: Low to Medium. Adding state management may require refactoring existing components to accept dynamic data instead of mock data.
+- **Technical Complexity**: Medium. Involves complex modal interactions, form validation, and state management across multiple components.
+- **Impact**: This sprint establishes the core data flow and user interaction patterns that all subsequent features will build upon.
 
 ---
 

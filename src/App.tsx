@@ -1,9 +1,22 @@
 import React, { useState } from 'react';
 import { Header } from './components/Header';
 import { SprintBoard } from './components/SprintBoard';
+import { AddStoryModal } from './components/AddStoryModal';
+import { useStories } from './hooks/useStories';
 
 function App() {
   const [activeView, setActiveView] = useState<'active' | 'archive'>('active');
+  const [addStoryModal, setAddStoryModal] = useState<{
+    isOpen: boolean;
+    sprintId: string;
+    sprintTitle: string;
+  }>({
+    isOpen: false,
+    sprintId: '',
+    sprintTitle: ''
+  });
+
+  const { sprints, addStory, toggleStory, getSprintStats } = useStories();
 
   const handleAddSprint = () => {
     console.log('Add Sprint clicked');
@@ -16,8 +29,26 @@ function App() {
   };
 
   const handleAddStory = (sprintId: string) => {
-    console.log('Add Story clicked for sprint:', sprintId);
-    // Will implement in Sprint 2
+    const sprint = sprints.find(s => s.id === sprintId);
+    if (sprint) {
+      setAddStoryModal({
+        isOpen: true,
+        sprintId,
+        sprintTitle: sprint.title
+      });
+    }
+  };
+
+  const handleCloseAddStoryModal = () => {
+    setAddStoryModal({
+      isOpen: false,
+      sprintId: '',
+      sprintTitle: ''
+    });
+  };
+
+  const handleSubmitStory = (sprintId: string, title: string, description: string, tags: string[]) => {
+    addStory(sprintId, title, description, tags);
   };
 
   const handleOpenSprint = (sprintId: string) => {
@@ -31,8 +62,7 @@ function App() {
   };
 
   const handleToggleStory = (storyId: string) => {
-    console.log('Toggle Story clicked for story:', storyId);
-    // Will implement in Sprint 2
+    toggleStory(storyId);
   };
 
   return (
@@ -46,6 +76,8 @@ function App() {
       
       {activeView === 'active' ? (
         <SprintBoard
+          sprints={sprints}
+          getSprintStats={getSprintStats}
           onAddStory={handleAddStory}
           onOpenSprint={handleOpenSprint}
           onCloseSprint={handleCloseSprint}
@@ -59,6 +91,14 @@ function App() {
           </div>
         </div>
       )}
+
+      <AddStoryModal
+        isOpen={addStoryModal.isOpen}
+        sprintId={addStoryModal.sprintId}
+        sprintTitle={addStoryModal.sprintTitle}
+        onClose={handleCloseAddStoryModal}
+        onSubmit={handleSubmitStory}
+      />
     </div>
   );
 }
