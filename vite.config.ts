@@ -19,4 +19,6 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  // Enable raw text imports for prompt files
+  assetsInclude: ['**/*.txt']
 });
