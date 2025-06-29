@@ -133,7 +133,8 @@ Make the title follow proper user story format. Include detailed acceptance crit
       headers: {
         'x-api-key': apiKey,
         'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
         model,
