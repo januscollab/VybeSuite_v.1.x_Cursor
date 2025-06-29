@@ -12,6 +12,7 @@ interface DroppableSprintCardProps {
   stats: SprintStats;
   isBacklog?: boolean;
   isDraggable?: boolean;
+  operationLoading?: Record<string, boolean>;
   onAddStory: () => void;
   onOpenSprint: () => void;
   onCloseSprint: (type: 'completed' | 'all') => void;
@@ -26,17 +27,37 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
   stats,
   isBacklog = false,
   isDraggable = false,
+  operationLoading = {},
   onAddStory,
   onOpenSprint,
   onCloseSprint,
   onToggleStory
 }) => {
   const [showCloseDropdown, setShowCloseDropdown] = useState(false);
+  const [dropdownTimeout, setDropdownTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnterClose = () => {
+    if (dropdownTimeout) {
+      clearTimeout(dropdownTimeout);
+      setDropdownTimeout(null);
+    }
+    setShowCloseDropdown(true);
+  };
+
+  const handleMouseLeaveClose = () => {
+    const timeout = setTimeout(() => {
+      setShowCloseDropdown(false);
+    }, 150); // Small delay to prevent flickering
+    setDropdownTimeout(timeout);
+  };
 
   const handleCloseSprint = (sprintId: string, type: 'completed' | 'all') => {
     console.log('Close Sprint clicked for sprint:', sprintId, 'type:', type);
     onCloseSprint(type);
+    setShowCloseDropdown(false);
   };
+
+  const isSprintLoading = operationLoading[`close-sprint-${id}`];
 
   return (
     <div className={`bg-bg-primary border border-border-default rounded-xl p-6 shadow-devsuite transition-all hover:shadow-devsuite-hover hover:border-border-strong ${
@@ -82,7 +103,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
           <button
             onClick={onOpenSprint}
             disabled={stats.todo === 0}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary rounded-md transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary disabled:hover:bg-transparent disabled:hover:text-text-secondary"
           >
             <Play className="w-4 h-4" />
             Open
@@ -90,9 +111,10 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
 
           <div className="relative">
             <button
-              onMouseEnter={() => setShowCloseDropdown(true)}
-              onMouseLeave={() => setShowCloseDropdown(false)}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary rounded-md transition-all"
+              onMouseEnter={handleMouseEnterClose}
+              onMouseLeave={handleMouseLeaveClose}
+              disabled={isSprintLoading}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary rounded-md transition-all disabled:opacity-50"
             >
               <FileText className="w-4 h-4" />
               Close
@@ -100,15 +122,16 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
             </button>
 
             {showCloseDropdown && (
-              <div className="absolute top-full right-0 mt-1 bg-bg-primary border border-border-default rounded-lg shadow-devsuite-hover z-50 min-w-44 overflow-hidden">
-                onMouseEnter={() => setShowCloseDropdown(true)}
-                onMouseLeave={() => setShowCloseDropdown(false)}
+              <div 
+                className="absolute top-full right-0 mt-1 bg-bg-primary border border-border-default rounded-lg shadow-devsuite-hover z-50 min-w-44 overflow-hidden"
+                onMouseEnter={handleMouseEnterClose}
+                onMouseLeave={handleMouseLeaveClose}
+              >
                 <button
                   onClick={() => {
                     handleCloseSprint(id, 'completed');
-                    setShowCloseDropdown(false);
                   }}
-                  disabled={stats.done === 0}
+                  disabled={stats.done === 0 || isSprintLoading}
                   className="flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors border-b border-border-subtle disabled:opacity-50 disabled:cursor-not-allowed disabled:text-text-disabled disabled:hover:bg-transparent disabled:hover:text-text-disabled text-text-secondary hover:bg-bg-muted hover:text-text-primary"
                 >
                   Close Completed
@@ -116,9 +139,9 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
                 <button
                   onClick={() => {
                     handleCloseSprint(id, 'all');
-                    setShowCloseDropdown(false);
                   }}
-                  className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors"
+                  disabled={isSprintLoading}
+                  className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors disabled:opacity-50"
                 >
                   Close All
                 </button>
@@ -146,6 +169,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
                 story={story}
                 index={index}
                 onToggle={onToggleStory}
+                isToggling={operationLoading[`toggle-story-${story.id}`]}
               />
             ))}
             {provided.placeholder}

@@ -5,6 +5,7 @@ import { Sprint, SprintStats } from '../types';
 
 interface DragDropSprintBoardProps {
   sprints: Sprint[];
+  operationLoading?: Record<string, boolean>;
   getSprintStats: (sprintId: string) => SprintStats;
   onAddStory: (sprintId: string) => void;
   onOpenSprint: (sprintId: string) => void;
@@ -15,6 +16,7 @@ interface DragDropSprintBoardProps {
 
 export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
   sprints,
+  operationLoading = {},
   getSprintStats,
   onAddStory,
   onOpenSprint,
@@ -40,9 +42,9 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
     onMoveStory(draggableId, destination.droppableId, destination.index);
   };
 
-  const prioritySprint = sprints.find(s => s.title === 'Priority Sprint');
-  const developmentSprint = sprints.find(s => s.title === 'Development Sprint');
-  const backlogSprint = sprints.find(s => s.title === 'Backlog - Future Enhancements');
+  const prioritySprint = sprints.find(s => s.id === 'priority');
+  const developmentSprint = sprints.find(s => s.id === 'development');
+  const backlogSprint = sprints.find(s => s.id === 'backlog');
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
@@ -57,6 +59,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
               icon={prioritySprint.icon}
               stories={prioritySprint.stories}
               stats={getSprintStats(prioritySprint.id)}
+              operationLoading={operationLoading}
               onAddStory={() => onAddStory(prioritySprint.id)}
               onOpenSprint={() => onOpenSprint(prioritySprint.id)}
               onCloseSprint={(type) => onCloseSprint(prioritySprint.id, type)}
@@ -72,6 +75,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
               stories={developmentSprint.stories}
               stats={getSprintStats(developmentSprint.id)}
               isDraggable={developmentSprint.isDraggable}
+              operationLoading={operationLoading}
               onAddStory={() => onAddStory(developmentSprint.id)}
               onOpenSprint={() => onOpenSprint(developmentSprint.id)}
               onCloseSprint={(type) => onCloseSprint(developmentSprint.id, type)}
@@ -88,6 +92,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
             stories={backlogSprint.stories}
             stats={getSprintStats(backlogSprint.id)}
             isBacklog={backlogSprint.isBacklog}
+            operationLoading={operationLoading}
             onAddStory={() => onAddStory(backlogSprint.id)}
             onOpenSprint={() => onOpenSprint(backlogSprint.id)}
             onCloseSprint={(type) => onCloseSprint(backlogSprint.id, type)}

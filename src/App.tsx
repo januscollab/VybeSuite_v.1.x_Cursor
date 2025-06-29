@@ -11,7 +11,7 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useSupabaseStories } from './hooks/useSupabaseStories';
 import { loadAISettings, saveAISettings } from './utils/aiSettings';
-import { AISettings } from './types';
+import { AISettings, Sprint } from './types';
 import { AlertTriangle, Database } from 'lucide-react';
 
 function App() {
@@ -48,6 +48,7 @@ function AppContent() {
     sprints, 
     loading, 
     error, 
+    operationLoading,
     addStory, 
     toggleStory, 
     moveStory, 
@@ -180,6 +181,7 @@ function AppContent() {
               {activeView === 'active' ? (
                 <DragDropSprintBoard
                   sprints={sprints}
+                  operationLoading={operationLoading}
                   getSprintStats={getSprintStats}
                   onAddStory={handleAddStory}
                   onOpenSprint={handleOpenSprint}
