@@ -93,8 +93,16 @@ export const useSupabaseStories = () => {
         .order('created_at', { ascending: false })
         .limit(1);
 
-      const lastNumber = lastStory?.[0]?.number ? parseInt(lastStory[0].number) : 0;
-      const newNumber = (lastNumber + 1).toString();
+      let lastNumber = 0;
+      if (lastStory?.[0]?.number) {
+        // Extract numeric part from format like "STORY-001" or just "001"
+        const numberPart = lastStory[0].number.includes('-') 
+          ? lastStory[0].number.split('-')[1] 
+          : lastStory[0].number;
+        lastNumber = parseInt(numberPart) || 0;
+      }
+      
+      const newNumber = `STORY-${String(lastNumber + 1).padStart(3, '0')}`;
 
       // Get next position in sprint
       const { data: lastStoryInSprint } = await supabase
