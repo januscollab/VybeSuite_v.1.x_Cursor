@@ -159,7 +159,6 @@ export const StoryModal: React.FC<StoryModalProps> = ({
     setGenerationError(null);
     
     try {
-      const systemPrompt = getStoryGenerationPrompt(selectedProvider);
       const systemPrompt = getStoryGenerationPrompt(selectedProvider, includeGithubCodeReview);
       
       const result = await generateStory({
