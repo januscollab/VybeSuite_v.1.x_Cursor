@@ -324,6 +324,7 @@ export const useSupabaseStories = () => {
           position: nextPosition,
           completed: false,
           date: new Date().toLocaleDateString('en-GB')
+        })
         .select()
         .single();
 
