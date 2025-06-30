@@ -70,7 +70,8 @@ function AppContent() {
     moveStory, 
     closeSprint,
     getSprintStats,
-    refreshData 
+    refreshData,
+    forceRefresh
   } = useSupabaseStories();
 
   const handleCloseBoard = () => {
@@ -193,9 +194,8 @@ function AppContent() {
   }
 
   const handleMoveSprint = (sprintId: string, newPosition: number) => {
-    if (moveSprint) {
-      moveSprint(sprintId, newPosition);
-    }
+    // This function would be implemented when sprint reordering is added
+    console.log('Move sprint:', sprintId, 'to position:', newPosition);
   };
 
   return (
@@ -233,7 +233,7 @@ function AppContent() {
                   }
                 </p>
                 <button
-                  onClick={refreshData}
+                  onClick={forceRefresh}
                   className="flex items-center gap-2 px-4 py-2 bg-devsuite-primary text-text-inverse rounded-lg hover:bg-devsuite-primary-hover transition-colors mx-auto"
                 >
                   <Database className="w-4 h-4" />
@@ -265,7 +265,7 @@ function AppContent() {
                   onDeleteSprint={handleDeleteSprint}
                   onToggleStory={handleToggleStory}
                   onMoveStory={handleMoveStory}
-                 onMoveSprint={handleMoveSprint}
+                  onMoveSprint={handleMoveSprint}
                   onEditStory={handleEditStory}
                   onCloseBoard={handleCloseBoard}
                 />
@@ -320,6 +320,46 @@ function AppContent() {
                 onSubmit={handleSubmitSprint}
               />
             </>
+          )}
+
+          {/* Development Debug Panel */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="fixed bottom-4 right-4 bg-bg-primary border border-border-default rounded-lg p-3 shadow-devsuite text-xs max-w-xs">
+              <div className="flex items-center gap-2 mb-2">
+                <Database className="w-4 h-4 text-devsuite-primary" />
+                <span className="font-semibold text-text-primary">Debug Panel</span>
+              </div>
+              <div className="space-y-1 text-text-tertiary">
+                <div className="flex justify-between">
+                  <span>Sprints:</span>
+                  <span className="text-text-primary">{sprints.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Loading:</span>
+                  <span className={loading ? 'text-warning' : 'text-success'}>
+                    {loading ? '⏳' : '✅'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Error:</span>
+                  <span className={error ? 'text-error' : 'text-success'}>
+                    {error ? '❌' : '✅'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Backlog:</span>
+                  <span className={sprints.some(s => s.isBacklog) ? 'text-success' : 'text-warning'}>
+                    {sprints.some(s => s.isBacklog) ? '✅' : '⚠️'}
+                  </span>
+                </div>
+                <button
+                  onClick={forceRefresh}
+                  className="w-full mt-2 px-2 py-1 bg-devsuite-primary text-text-inverse text-xs rounded hover:bg-devsuite-primary-hover transition-colors"
+                >
+                  Force Refresh
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </ErrorBoundary>

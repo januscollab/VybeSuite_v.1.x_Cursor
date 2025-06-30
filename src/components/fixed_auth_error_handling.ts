@@ -1,3 +1,4 @@
+// src/components/AuthPage.tsx - FIXED ERROR HANDLING
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
