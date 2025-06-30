@@ -1,12 +1,18 @@
+// UserFormModal with Admin Client Support
+// Replace src/components/admin/UserFormModal.tsx with this code
+
 import React, { useState, useEffect } from 'react';
-import { X, Save, User, AlertCircle } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { X, User, Mail, Lock, Shield } from 'lucide-react';
+import { supabase, getAdminClient, isAdminEnabled } from '../../lib/supabase';
 import { PulsingDotsLoader } from '../LoadingSpinner';
 
 interface User {
   id: string;
   email: string;
   role: string;
+  created_at: string;
+  last_sign_in_at: string | null;
+  email_confirmed_at: string | null;
   user_metadata: {
     first_name?: string;
     last_name?: string;
@@ -67,9 +73,15 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
     setError(null);
 
     try {
+      if (!isAdminEnabled()) {
+        throw new Error('Admin operations require service role key configuration');
+      }
+
+      const adminClient = getAdminClient();
+
       if (isEditMode && user) {
         // Update existing user
-        const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
+        const { error: updateError } = await adminClient.auth.admin.updateUserById(user.id, {
           email: formData.email,
           user_metadata: {
             first_name: formData.firstName,
@@ -95,7 +107,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
           throw new Error('Password is required for new users');
         }
 
-        const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
           email: formData.email,
           password: formData.password,
           user_metadata: {
@@ -130,6 +142,10 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
     }
   };
 
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -143,10 +159,10 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
             </div>
             <div>
               <h1 className="text-lg font-bold text-text-primary">
-                {isEditMode ? 'Edit User' : 'Create User'}
+                {isEditMode ? 'Edit User' : 'Create New User'}
               </h1>
               <p className="text-sm text-text-tertiary">
-                {isEditMode ? 'Update user details and permissions' : 'Add a new user to the platform'}
+                {isEditMode ? 'Update user information and role' : 'Add a new user to the platform'}
               </p>
             </div>
           </div>
@@ -159,122 +175,130 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
         </div>
 
         {/* Body */}
-        <div className="px-6 py-4">
+        <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
+          {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-error-light border border-error rounded-lg flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-error-dark" />
-              <span className="text-sm text-error-dark">{error}</span>
+            <div className="bg-error/10 border border-error/20 rounded-lg p-3">
+              <p className="text-error text-sm">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name Fields */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
-                  placeholder="John"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
-                  placeholder="Smith"
-                />
-              </div>
+          {/* Admin Warning */}
+          {!isAdminEnabled() && (
+            <div className="bg-warning-light border border-warning-dark rounded-lg p-3">
+              <p className="text-warning-dark text-sm">
+                Service role key required for user management operations
+              </p>
             </div>
+          )}
 
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
-                Email Address <span className="text-error">*</span>
-              </label>
+          {/* First Name */}
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-2">
+              First Name
+            </label>
+            <input
+              type="text"
+              value={formData.firstName}
+              onChange={(e) => handleInputChange('firstName', e.target.value)}
+              className="w-full px-3 py-2 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+              placeholder="Enter first name"
+            />
+          </div>
+
+          {/* Last Name */}
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-2">
+              Last Name
+            </label>
+            <input
+              type="text"
+              value={formData.lastName}
+              onChange={(e) => handleInputChange('lastName', e.target.value)}
+              className="w-full px-3 py-2 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+              placeholder="Enter last name"
+            />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-2">
+              Email Address *
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-quaternary" />
               <input
                 type="email"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className="w-full px-3 py-2.5 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
-                placeholder="user@example.com"
                 required
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                className="w-full pl-10 pr-3 py-2 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+                placeholder="user@example.com"
               />
             </div>
+          </div>
 
-            {/* Password (only for new users) */}
-            {!isEditMode && (
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Password <span className="text-error">*</span>
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
-                  placeholder="Enter password"
-                  required
-                  minLength={6}
-                />
-                <p className="text-xs text-text-tertiary mt-1">
-                  Password must be at least 6 characters long
-                </p>
-              </div>
-            )}
-
-            {/* Role */}
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
-                Role <span className="text-error">*</span>
-              </label>
+          {/* Role */}
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-2">
+              Role
+            </label>
+            <div className="relative">
+              <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-quaternary" />
               <select
                 value={formData.role}
-                onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
-                className="w-full px-3 py-2.5 border border-border-default rounded-lg bg-bg-primary text-text-primary focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
-                required
+                onChange={(e) => handleInputChange('role', e.target.value)}
+                className="w-full pl-10 pr-3 py-2 border border-border-default rounded-lg bg-bg-primary text-text-primary focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
               >
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
                 <option value="super_admin">Super Admin</option>
               </select>
+            </div>
+          </div>
+
+          {/* Password (only for new users) */}
+          {!isEditMode && (
+            <div>
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                Password *
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-quaternary" />
+                <input
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+                  placeholder="Enter secure password"
+                  minLength={6}
+                />
+              </div>
               <p className="text-xs text-text-tertiary mt-1">
-                {formData.role === 'super_admin' && 'Full platform management access'}
-                {formData.role === 'admin' && 'Limited administrative access'}
-                {formData.role === 'user' && 'Standard user access'}
+                Password must be at least 6 characters long
               </p>
             </div>
-          </form>
-        </div>
+          )}
+        </form>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border-default flex justify-end gap-3">
+        <div className="px-6 py-4 border-t border-border-default flex items-center justify-end gap-3">
           <button
+            type="button"
             onClick={onClose}
+            className="px-4 py-2 text-text-secondary hover:text-text-primary hover:bg-bg-muted rounded-lg transition-all"
             disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-text-secondary border border-border-default rounded-lg hover:bg-bg-muted transition-all disabled:opacity-50"
           >
             Cancel
           </button>
           <button
+            type="submit"
             onClick={handleSubmit}
-            disabled={loading || !formData.email || (!isEditMode && !formData.password)}
-            className="flex items-center gap-2 px-4 py-2 bg-devsuite-primary text-text-inverse text-sm font-medium rounded-lg hover:bg-devsuite-primary-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading || !isAdminEnabled()}
+            className="flex items-center gap-2 px-4 py-2 bg-devsuite-primary text-text-inverse rounded-lg hover:bg-devsuite-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? (
-              <PulsingDotsLoader size="sm" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
+            {loading && <PulsingDotsLoader size="sm" />}
             {isEditMode ? 'Update User' : 'Create User'}
           </button>
         </div>
