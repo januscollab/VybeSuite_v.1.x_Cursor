@@ -25,7 +25,7 @@ export const AuthPage: React.FC = () => {
     return password.length >= 6;
   };
 
-  // FIXED: Enhanced error message mapping
+  // Enhanced error message mapping
   const getErrorMessage = (error: any, mode: string): string => {
     if (!error || !error.message) return 'An unexpected error occurred';
     
@@ -40,6 +40,12 @@ export const AuthPage: React.FC = () => {
 
     // Sign up specific errors
     if (mode === 'signup') {
+      // Handle the new database error
+      if (message.includes('database error saving new user') ||
+          message.includes('unexpected_failure')) {
+        return 'There was a system error creating your account. Please try again or contact support if the problem persists.';
+      }
+      
       if (message.includes('user already registered') || 
           message.includes('user_already_exists') ||
           message.includes('email address is already registered') ||
@@ -210,7 +216,7 @@ export const AuthPage: React.FC = () => {
             {mode === 'reset' && 'Reset Password'}
           </h1>
           <p className="text-text-tertiary">
-            {mode === 'signin' && 'Sign in to access your Sprint Board'}
+            {mode === 'signin' && 'Sign in to your Sprint Board account'}
             {mode === 'signup' && 'Create your Sprint Board account'}
             {mode === 'reset' && 'Enter your email to reset your password'}
           </p>
@@ -218,25 +224,18 @@ export const AuthPage: React.FC = () => {
 
         {/* Body */}
         <div className="px-8 py-6">
-          {/* FIXED: Enhanced Error Display */}
+          {/* Error/Success Messages */}
           {error && (
-            <div className="mb-4 p-4 bg-error-light border border-error rounded-lg flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-error-dark">Authentication Error</p>
-                <p className="text-sm text-error-dark mt-1">{error}</p>
-              </div>
+            <div className="mb-4 p-3 bg-bg-error/10 border border-border-error rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-text-error flex-shrink-0" />
+              <span className="text-sm text-text-error">{error}</span>
             </div>
           )}
 
-          {/* Success Message */}
           {success && (
-            <div className="mb-4 p-4 bg-success-light border border-success rounded-lg flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-success-dark">Success</p>
-                <p className="text-sm text-success-dark mt-1">{success}</p>
-              </div>
+            <div className="mb-4 p-3 bg-bg-success/10 border border-border-success rounded-lg flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-text-success flex-shrink-0" />
+              <span className="text-sm text-text-success">{success}</span>
             </div>
           )}
 
@@ -253,8 +252,9 @@ export const AuthPage: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
                   className="w-full pl-10 pr-4 py-3 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-devsuite-primary/20 focus:border-devsuite-primary transition-all"
-                  placeholder="Enter your email"
+                  placeholder="Enter your email address"
                   required
                   disabled={isSubmitting}
                 />
@@ -274,6 +274,7 @@ export const AuthPage: React.FC = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                     className="w-full pl-10 pr-12 py-3 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-devsuite-primary/20 focus:border-devsuite-primary transition-all"
                     placeholder="Enter your password"
                     required
@@ -305,6 +306,7 @@ export const AuthPage: React.FC = () => {
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    autoComplete="new-password"
                     className="w-full pl-10 pr-12 py-3 border border-border-default rounded-lg focus:outline-none focus:ring-2 focus:ring-devsuite-primary/20 focus:border-devsuite-primary transition-all"
                     placeholder="Confirm your password"
                     required
