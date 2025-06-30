@@ -22,11 +22,11 @@ export const useUserSettings = () => {
         .from('user_settings')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .limit(1);
 
       let settings: UserSettings;
 
-      if (settingsError && settingsError.code === 'PGRST116') {
+      if (!settingsData || settingsData.length === 0) {
         // No settings found, create default settings
         try {
           const { data: newSettings, error: createError } = await supabase
@@ -74,13 +74,14 @@ export const useUserSettings = () => {
       } else if (settingsError) {
         throw settingsError;
       } else {
+        const userSettingsData = settingsData[0];
         settings = {
-          id: settingsData.id,
-          userId: settingsData.user_id,
-          storyNumberPrefix: settingsData.story_number_prefix,
-          preferredHomepage: settingsData.preferred_homepage,
-          createdAt: settingsData.created_at,
-          updatedAt: settingsData.updated_at
+          id: userSettingsData.id,
+          userId: userSettingsData.user_id,
+          storyNumberPrefix: userSettingsData.story_number_prefix,
+          preferredHomepage: userSettingsData.preferred_homepage,
+          createdAt: userSettingsData.created_at,
+          updatedAt: userSettingsData.updated_at
         };
       }
 
