@@ -32,16 +32,18 @@ export const useSupabaseStories = () => {
       backlogCreationRef.current = true;
       
       // Check if backlog sprint exists
-      const { data: existingBacklog, error: checkError } = await supabase
+      const { data: existingBacklogs, error: checkError } = await supabase
         .from('sprints')
         .select('id, archived_at, position')
         .eq('user_id', user.id)
         .eq('is_backlog', true)
-        .single();
+        .limit(1);
 
       if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
         throw checkError;
       }
+
+      const existingBacklog = existingBacklogs?.[0];
 
       if (existingBacklog) {
         // Unarchive if needed

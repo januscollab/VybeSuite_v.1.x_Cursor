@@ -28,22 +28,15 @@ export const useAdminAuth = () => {
     try {
       setLoading(true);
 
-      // Check user role from database
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
-        throw error;
-      }
-
-      const role = data?.role || 'user';
-      setUserRole(role);
-      setIsAdmin(role === 'super_admin');
+      // Temporarily disable admin role checking due to RLS policy recursion
+      // This needs to be fixed in Supabase RLS policies
+      console.warn('Admin role checking disabled due to RLS policy recursion');
+      setUserRole('user');
+      setIsAdmin(false);
       
-      console.log('User role check:', { userId: user.id, role, isAdmin: role === 'super_admin' });
+      // TODO: Fix RLS policies in Supabase dashboard to resolve infinite recursion
+      // The user_roles table policies are creating a circular dependency
+      
     } catch (err) {
       console.error('Error checking admin role:', err);
       setIsAdmin(false);
