@@ -1,6 +1,9 @@
+// Fixed UserDeleteModal - Corrected Story Deletion Logic
+// Replace src/components/admin/UserDeleteModal.tsx with this code
+
 import React, { useState } from 'react';
 import { X, AlertTriangle, Trash2, Database, FileText, Settings, User } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase, getAdminClient, isAdminEnabled } from '../../lib/supabase';
 import { PulsingDotsLoader } from '../LoadingSpinner';
 
 interface User {
@@ -52,22 +55,33 @@ export const UserDeleteModal: React.FC<UserDeleteModalProps> = ({
     setDeletionProgress([]);
 
     try {
-      // Step 1: Delete user stories
-      addProgress('Deleting user stories...');
-      const { error: storiesError } = await supabase
-        .from('stories')
-        .delete()
-        .in('sprint_id', 
-          supabase
-            .from('sprints')
-            .select('id')
-            .eq('user_id', user.id)
-        );
+      // Step 1: Get user's sprint IDs first, then delete stories
+      addProgress('Finding user sprints...');
+      const { data: userSprints, error: sprintQueryError } = await supabase
+        .from('sprints')
+        .select('id')
+        .eq('user_id', user.id);
 
-      if (storiesError) throw new Error(`Failed to delete stories: ${storiesError.message}`);
-      addProgress('✅ User stories deleted');
+      if (sprintQueryError) throw new Error(`Failed to find user sprints: ${sprintQueryError.message}`);
+      
+      const sprintIds = userSprints?.map(sprint => sprint.id) || [];
+      addProgress(`Found ${sprintIds.length} sprint(s) to clean up`);
 
-      // Step 2: Delete user sprints
+      // Step 2: Delete user stories (if any sprints exist)
+      if (sprintIds.length > 0) {
+        addProgress('Deleting user stories...');
+        const { error: storiesError } = await supabase
+          .from('stories')
+          .delete()
+          .in('sprint_id', sprintIds);
+
+        if (storiesError) throw new Error(`Failed to delete stories: ${storiesError.message}`);
+        addProgress('✅ User stories deleted');
+      } else {
+        addProgress('✅ No stories to delete');
+      }
+
+      // Step 3: Delete user sprints
       addProgress('Deleting user sprints...');
       const { error: sprintsError } = await supabase
         .from('sprints')
@@ -77,7 +91,7 @@ export const UserDeleteModal: React.FC<UserDeleteModalProps> = ({
       if (sprintsError) throw new Error(`Failed to delete sprints: ${sprintsError.message}`);
       addProgress('✅ User sprints deleted');
 
-      // Step 3: Delete user settings
+      // Step 4: Delete user settings
       addProgress('Deleting user settings...');
       const { error: settingsError } = await supabase
         .from('user_settings')
@@ -87,7 +101,7 @@ export const UserDeleteModal: React.FC<UserDeleteModalProps> = ({
       if (settingsError) throw new Error(`Failed to delete user settings: ${settingsError.message}`);
       addProgress('✅ User settings deleted');
 
-      // Step 4: Delete user role
+      // Step 5: Delete user role
       addProgress('Removing user role...');
       const { error: roleError } = await supabase
         .from('user_roles')
@@ -97,11 +111,17 @@ export const UserDeleteModal: React.FC<UserDeleteModalProps> = ({
       if (roleError) throw new Error(`Failed to delete user role: ${roleError.message}`);
       addProgress('✅ User role removed');
 
-      // Step 5: Delete user from auth
+      // Step 6: Delete user from auth (use admin client if available)
       addProgress('Deleting user account...');
-      const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
-
-      if (authError) throw new Error(`Failed to delete user account: ${authError.message}`);
+      if (isAdminEnabled()) {
+        const adminClient = getAdminClient();
+        const { error: authError } = await adminClient.auth.admin.deleteUser(user.id);
+        if (authError) throw new Error(`Failed to delete user account: ${authError.message}`);
+      } else {
+        // Fallback: This won't work without admin permissions, but we'll try
+        const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
+        if (authError) throw new Error(`Failed to delete user account: ${authError.message}`);
+      }
       addProgress('✅ User account deleted');
 
       addProgress('🎉 User deletion completed successfully');
