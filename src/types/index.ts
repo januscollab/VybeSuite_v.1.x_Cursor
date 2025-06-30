@@ -64,6 +64,11 @@ export interface AIGenerationResponse {
   title: string;
   description: string;
   tags: string[];
+  _metadata?: {
+    isComplete: boolean;
+    contentLength: number;
+    provider: string;
+  };
 }
 
 export interface SearchFilters {

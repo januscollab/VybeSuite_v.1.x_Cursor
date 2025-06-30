@@ -363,16 +363,28 @@ export const StoryModal: React.FC<StoryModalProps> = ({
             <div className="mb-3">
               <label htmlFor="description" className="block font-semibold text-[13px] mb-1 text-text-primary">
                 Description
+                {aiGenerationWarning && (
+                  <span className="ml-2 text-xs text-warning-dark font-normal">
+                    ⚠️ Consider expanding this description
+                  </span>
+                )}
               </label>
               <textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Detailed description of the story..."
-                className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit resize-vertical min-h-[70px]"
+                className={`w-full px-3 py-2.5 border-2 rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit resize-vertical min-h-[70px] ${
+                  aiGenerationWarning 
+                    ? 'border-warning focus:border-warning' 
+                    : 'border-border-default focus:border-devsuite-primary'
+                }`}
               />
               <div className="text-[11px] text-text-tertiary mt-0.5">
-                Provide detailed requirements, acceptance criteria, and any additional context
+                {aiGenerationWarning 
+                  ? 'AI-generated description may be incomplete. Please expand with detailed acceptance criteria and functional requirements.'
+                  : 'Provide detailed requirements, acceptance criteria, and any additional context'
+                }
               </div>
             </div>
 

@@ -60,6 +60,14 @@ Make the title follow proper user story format. Include detailed acceptance crit
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
+    // ENHANCED LOGGING: Log the raw AI response for debugging
+    console.log('🤖 OpenAI Raw Response:', {
+      model,
+      prompt: prompt.substring(0, 100) + '...',
+      contentLength: content?.length || 0,
+      content: content
+    });
+
     if (!content) {
       throw new AIServiceError('No content received from OpenAI', 'openai');
     }
@@ -68,11 +76,34 @@ Make the title follow proper user story format. Include detailed acceptance crit
     try {
       // Clean up the content - remove markdown code blocks if present
       const cleanContent = content.replace(/```json\s*|\s*```/g, '').trim();
+      
+      console.log('🔍 OpenAI Cleaned Content:', cleanContent);
+      
       const parsed = JSON.parse(cleanContent);
+      
+      // VALIDATION: Check if description is comprehensive enough
+      const description = parsed.description || '';
+      const hasAcceptanceCriteria = description.toLowerCase().includes('acceptance criteria') || 
+                                   description.toLowerCase().includes('requirements') ||
+                                   description.length > 100;
+      
+      if (!hasAcceptanceCriteria) {
+        console.warn('⚠️ OpenAI generated description appears incomplete:', {
+          length: description.length,
+          hasAcceptanceCriteria: false,
+          description: description.substring(0, 200) + '...'
+        });
+      }
+      
       return {
         title: parsed.title || `As a user, I want to ${prompt} so that I can achieve my goals`,
         description: parsed.description || `Implement: ${prompt}`,
-        tags: Array.isArray(parsed.tags) ? parsed.tags : ['feature']
+        tags: Array.isArray(parsed.tags) ? parsed.tags : ['feature'],
+        _metadata: {
+          isComplete: hasAcceptanceCriteria,
+          contentLength: description.length,
+          provider: 'openai'
+        }
       };
     } catch (parseError) {
       console.warn('Failed to parse AI response as JSON:', parseError);
@@ -164,6 +195,14 @@ Make the title follow proper user story format. Include detailed acceptance crit
     const data = await response.json();
     const content = data.content?.[0]?.text;
 
+    // ENHANCED LOGGING: Log the raw AI response for debugging
+    console.log('🤖 Anthropic Raw Response:', {
+      model,
+      prompt: prompt.substring(0, 100) + '...',
+      contentLength: content?.length || 0,
+      content: content
+    });
+
     if (!content) {
       throw new AIServiceError('No content received from Anthropic', 'anthropic');
     }
@@ -172,11 +211,34 @@ Make the title follow proper user story format. Include detailed acceptance crit
     try {
       // Clean up the content - remove markdown code blocks if present
       const cleanContent = content.replace(/```json\s*|\s*```/g, '').trim();
+      
+      console.log('🔍 Anthropic Cleaned Content:', cleanContent);
+      
       const parsed = JSON.parse(cleanContent);
+      
+      // VALIDATION: Check if description is comprehensive enough
+      const description = parsed.description || '';
+      const hasAcceptanceCriteria = description.toLowerCase().includes('acceptance criteria') || 
+                                   description.toLowerCase().includes('requirements') ||
+                                   description.length > 100;
+      
+      if (!hasAcceptanceCriteria) {
+        console.warn('⚠️ Anthropic generated description appears incomplete:', {
+          length: description.length,
+          hasAcceptanceCriteria: false,
+          description: description.substring(0, 200) + '...'
+        });
+      }
+      
       return {
         title: parsed.title || `As a user, I want to ${prompt} so that I can achieve my goals`,
         description: parsed.description || `Implement: ${prompt}`,
-        tags: Array.isArray(parsed.tags) ? parsed.tags : ['feature']
+        tags: Array.isArray(parsed.tags) ? parsed.tags : ['feature'],
+        _metadata: {
+          isComplete: hasAcceptanceCriteria,
+          contentLength: description.length,
+          provider: 'anthropic'
+        }
       };
     } catch (parseError) {
       console.warn('Failed to parse AI response as JSON:', parseError);
