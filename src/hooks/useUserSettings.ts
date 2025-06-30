@@ -28,25 +28,49 @@ export const useUserSettings = () => {
 
       if (settingsError && settingsError.code === 'PGRST116') {
         // No settings found, create default settings
-        const { data: newSettings, error: createError } = await supabase
-          .from('user_settings')
-          .insert({
-            user_id: user.id,
-            story_number_prefix: 'STORY',
-            preferred_homepage: 'Sprint Board'
-          })
-          .select()
-          .single();
+        try {
+          const { data: newSettings, error: createError } = await supabase
+            .from('user_settings')
+            .insert({
+              user_id: user.id,
+              story_number_prefix: 'STORY',
+              preferred_homepage: 'Sprint Board'
+            })
+            .select()
+            .single();
 
-        if (createError) throw createError;
-        settings = {
-          id: newSettings.id,
-          userId: newSettings.user_id,
-          storyNumberPrefix: newSettings.story_number_prefix,
-          preferredHomepage: newSettings.preferred_homepage,
-          createdAt: newSettings.created_at,
-          updatedAt: newSettings.updated_at
-        };
+          if (createError) throw createError;
+          settings = {
+            id: newSettings.id,
+            userId: newSettings.user_id,
+            storyNumberPrefix: newSettings.story_number_prefix,
+            preferredHomepage: newSettings.preferred_homepage,
+            createdAt: newSettings.created_at,
+            updatedAt: newSettings.updated_at
+          };
+        } catch (insertError: any) {
+          // Handle race condition: if settings were created between our initial check and insert
+          if (insertError.code === '23505') {
+            // Duplicate key constraint violation - settings now exist, fetch them
+            const { data: existingSettings, error: refetchError } = await supabase
+              .from('user_settings')
+              .select('*')
+              .eq('user_id', user.id)
+              .single();
+
+            if (refetchError) throw refetchError;
+            settings = {
+              id: existingSettings.id,
+              userId: existingSettings.user_id,
+              storyNumberPrefix: existingSettings.story_number_prefix,
+              preferredHomepage: existingSettings.preferred_homepage,
+              createdAt: existingSettings.created_at,
+              updatedAt: existingSettings.updated_at
+            };
+          } else {
+            throw insertError;
+          }
+        }
       } else if (settingsError) {
         throw settingsError;
       } else {

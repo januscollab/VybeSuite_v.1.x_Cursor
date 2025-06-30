@@ -87,7 +87,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
   const isSprintLoading = operationLoading[`close-sprint-${id}`];
   const isDeleteLoading = operationLoading[`delete-sprint-${id}`];
   
-  // Apply layout rules validation
+  // CRITICAL: Apply layout rules validation for sprint behavior
   const layoutRules = validateSprintLayout({ id, isBacklog });
   const isPrioritySprint = id === 'priority';
   const isBacklogSprint = isBacklog;
@@ -221,7 +221,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
         </div>
       </div>
 
-      {/* Delete Button - Bottom Left for User-Generated Sprints Only (not backlog or priority) */}
+      {/* CRITICAL: Delete Button - ONLY for User-Generated Sprints (NEVER backlog or priority) */}
       {isUserGeneratedSprint && (
         <button
           onClick={handleDeleteSprint}
@@ -233,7 +233,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
         </button>
       )}
 
-      {/* Stories - Droppable Area */}
+      {/* CRITICAL: Stories - Droppable Area with TWO-COLUMN layout for backlog */}
       <Droppable droppableId={id}>
         {(provided, snapshot) => (
           <div
@@ -243,7 +243,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
               snapshot.isDraggingOver 
                 ? 'bg-devsuite-primary-subtle border-2 border-dashed border-devsuite-primary rounded-lg p-2' 
                 : ''
-            } ${isBacklog ? 'grid grid-cols-1 lg:grid-cols-2 gap-2' : 'space-y-2'}`}  // Two-column layout for backlog
+            } ${isBacklog ? 'grid grid-cols-1 lg:grid-cols-2 gap-2' : 'space-y-2'}`}  // CRITICAL: Two-column layout for backlog ONLY
           >
             {stories.map((story, index) => (
               <DraggableStory
@@ -257,7 +257,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
             ))}
             {provided.placeholder}
             
-            {/* Empty state */}
+            {/* CRITICAL: Empty state with different messages for backlog vs regular sprints */}
             {stories.length === 0 && (
               <div className="flex items-center justify-center py-8 text-text-quaternary">
                 <div className="text-center">
