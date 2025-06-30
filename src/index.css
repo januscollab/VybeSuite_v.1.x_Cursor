@@ -8,3 +8,20 @@
   --text-inverse: #FFFFFF;
   --text-secondary: #3E3E3E;
 }
+
+/* STORY-006: Preserve text formatting in textareas and pre elements */
+.preserve-formatting {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+}
+
+/* STORY-004: Optimistic update animations */
+@keyframes sync-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.story-syncing {
+  animation: sync-pulse 1.5s ease-in-out infinite;
+}

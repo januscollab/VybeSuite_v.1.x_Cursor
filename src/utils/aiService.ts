@@ -71,7 +71,7 @@ Make the title follow proper user story format. Include detailed acceptance crit
       const parsed = JSON.parse(cleanContent);
       return {
         title: parsed.title || `As a user, I want to ${prompt} so that I can achieve my goals`,
-        description: parsed.description || `Implement: ${prompt}`,
+        description: parsed.description ? preserveFormatting(parsed.description) : `Implement: ${prompt}`,
         tags: Array.isArray(parsed.tags) ? parsed.tags : ['feature']
       };
     } catch (parseError) {
@@ -79,7 +79,7 @@ Make the title follow proper user story format. Include detailed acceptance crit
       // Fallback if JSON parsing fails
       return {
         title: `As a user, I want to ${prompt} so that I can achieve my goals`,
-        description: content,
+        description: preserveFormatting(content),
         tags: ['feature', 'ai-generated']
       };
     }
@@ -175,7 +175,7 @@ Make the title follow proper user story format. Include detailed acceptance crit
       const parsed = JSON.parse(cleanContent);
       return {
         title: parsed.title || `As a user, I want to ${prompt} so that I can achieve my goals`,
-        description: parsed.description || `Implement: ${prompt}`,
+        description: parsed.description ? preserveFormatting(parsed.description) : `Implement: ${prompt}`,
         tags: Array.isArray(parsed.tags) ? parsed.tags : ['feature']
       };
     } catch (parseError) {
@@ -183,7 +183,7 @@ Make the title follow proper user story format. Include detailed acceptance crit
       // Fallback if JSON parsing fails
       return {
         title: `As a user, I want to ${prompt} so that I can achieve my goals`,
-        description: content,
+        description: preserveFormatting(content),
         tags: ['feature', 'ai-generated']
       };
     }
@@ -207,6 +207,17 @@ Make the title follow proper user story format. Include detailed acceptance crit
       'anthropic'
     );
   }
+}
+
+// STORY-005: Preserve formatting in AI responses
+function preserveFormatting(text: string): string {
+  if (!text) return '';
+  
+  // Preserve line breaks and formatting
+  return text
+    .replace(/\\n/g, '\n')  // Convert escaped newlines to actual newlines
+    .replace(/\n\s*\n/g, '\n\n')  // Normalize multiple newlines
+    .trim();
 }
 
 export async function generateStory(request: AIGenerationRequest): Promise<AIGenerationResponse> {

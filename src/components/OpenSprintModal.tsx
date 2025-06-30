@@ -127,8 +127,9 @@ export const OpenSprintModal: React.FC<OpenSprintModalProps> = ({
                   id="sprintPrompt"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  className="w-full h-96 px-4 py-3 border border-border-default rounded-lg bg-bg-primary text-text-primary font-mono text-sm resize-vertical focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+                  className="w-full h-96 px-4 py-3 border border-border-default rounded-lg bg-bg-primary text-text-primary font-mono text-sm resize-vertical focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all whitespace-pre-wrap"
                   placeholder="Generated prompt will appear here..."
+                  style={{ whiteSpace: 'pre-wrap' }}
                 />
                 <div className="text-xs text-text-tertiary mt-2">
                   This prompt includes all open stories and follows the standard format for development handoff.
@@ -147,7 +148,12 @@ export const OpenSprintModal: React.FC<OpenSprintModalProps> = ({
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-text-primary">{story.title}</p>
                         {story.description && (
-                          <p className="text-xs text-text-tertiary mt-1 line-clamp-2">{story.description}</p>
+                          <div className="text-xs text-text-tertiary mt-1 whitespace-pre-wrap" style={{ whiteSpace: 'pre-wrap' }}>
+                            {story.description.length > 200 
+                              ? `${story.description.substring(0, 200)}...` 
+                              : story.description
+                            }
+                          </div>
                         )}
                         {story.tags.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
