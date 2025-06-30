@@ -81,7 +81,7 @@ export const AuthPage: React.FC = () => {
       if (error) {
         // Provide user-friendly error messages for common scenarios
         if (error.message.includes('User already registered') || error.message.includes('user_already_exists')) {
-          setError('An account with this email already exists. Please sign in instead or use a different email address.');
+          setError('An account with this email already exists. Please sign in, or if you\'ve forgotten your password, click "Forgot your password?" below to reset it.');
         } else if (error.message.includes('Password should be at least')) {
           setError('Password must be at least 6 characters long.');
         } else if (error.message.includes('Invalid email')) {
