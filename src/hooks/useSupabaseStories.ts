@@ -262,6 +262,30 @@ export const useSupabaseStories = () => {
   }) => {
     if (!user || !userProfile) return;
 
+    // STORY-004: Optimistic UI update - Add story immediately to local state
+    const tempStoryId = `temp-${Date.now()}`;
+    const tempStoryNumber = `${userProfile.settings.storyNumberPrefix}-TEMP`;
+    
+    const tempStory: Story = {
+      id: tempStoryId,
+      number: tempStoryNumber,
+      title: storyData.title,
+      description: storyData.description || '',
+      completed: false,
+      date: new Date().toLocaleDateString('en-GB'),
+      tags: storyData.tags || [],
+      sprintId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isOptimistic: true // Mark as optimistic update
+    };
+
+    // Immediately update local state
+    setSprints(prev => prev.map(sprint => 
+      sprint.id === sprintId 
+        ? { ...sprint, stories: [...sprint.stories, tempStory] }
+        : sprint
+    ));
     try {
       setOperationLoading(prev => ({ ...prev, [`add-story-${sprintId}`]: true }));
 
@@ -289,7 +313,7 @@ export const useSupabaseStories = () => {
 
       const nextPosition = (sprintStories?.[0]?.position || 0) + 1;
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('stories')
         .insert({
           number: storyNumber,
@@ -301,14 +325,50 @@ export const useSupabaseStories = () => {
           completed: false,
           date: new Date().toLocaleDateString('en-GB')
         });
+        .select()
+        .single();
 
       if (error) throw error;
       
+      // STORY-004: Replace optimistic story with real data
+      setSprints(prev => prev.map(sprint => 
+        sprint.id === sprintId 
+          ? {
+              ...sprint,
+              stories: sprint.stories.map(story => 
+                story.id === tempStoryId 
+                  ? {
+                      id: data.id,
+                      number: data.number,
+                      title: data.title,
+                      description: data.description,
+                      completed: data.completed,
+                      completedAt: data.completed_at,
+                      date: data.date,
+                      tags: data.tags || [],
+                      sprintId: data.sprint_id,
+                      createdAt: data.created_at,
+                      updatedAt: data.updated_at,
+                      archivedAt: data.archived_at
+                    }
+                  : story
+              )
+            }
+          : sprint
+      ));
+      
       console.log('✅ Story added successfully:', storyNumber);
-      await loadData(true); // Force refresh after adding
       
     } catch (err) {
       console.error('❌ Error adding story:', err);
+      
+      // STORY-004: Remove optimistic story on error and show retry option
+      setSprints(prev => prev.map(sprint => 
+        sprint.id === sprintId 
+          ? { ...sprint, stories: sprint.stories.filter(story => story.id !== tempStoryId) }
+          : sprint
+      ));
+      
       setError(err instanceof Error ? err.message : 'Failed to add story');
     } finally {
       setOperationLoading(prev => ({ ...prev, [`add-story-${sprintId}`]: false }));

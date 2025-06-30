@@ -48,18 +48,25 @@ export const DraggableStory: React.FC<DraggableStoryProps> = ({
             snapshot.isDragging 
               ? 'shadow-devsuite-hover border-devsuite-primary bg-bg-primary transform rotate-2' 
               : ''
-          } ${isToggling ? 'opacity-75' : ''} ${onEdit ? 'cursor-pointer' : ''}`}
+          } ${isToggling ? 'opacity-75' : ''} ${onEdit ? 'cursor-pointer' : ''} ${
+            story.isOptimistic ? 'opacity-75 border-dashed border-devsuite-primary' : ''
+          }`}
         >
           <span className="text-text-quaternary cursor-grab font-bold text-xs">::</span>
           
+          {/* STORY-004: Show sync indicator for optimistic updates */}
+          {story.isOptimistic && (
+            <div className="w-2 h-2 bg-devsuite-primary rounded-full animate-pulse flex-shrink-0" title="Syncing..."></div>
+          )}
+          
           <button
             onClick={handleToggle}
-            disabled={isToggling}
+            disabled={isToggling || story.isOptimistic}
             className={`w-4 h-4 border-2 rounded flex-shrink-0 flex items-center justify-center transition-all cursor-pointer relative ${
               story.completed
                 ? 'bg-success border-success text-text-inverse hover:bg-success-dark'
                 : 'border-border-strong bg-bg-primary hover:border-devsuite-primary hover:bg-devsuite-primary/5'
-            } ${isToggling ? 'cursor-not-allowed' : ''}`}
+            } ${isToggling || story.isOptimistic ? 'cursor-not-allowed' : ''}`}
           >
             {isToggling ? (
               <PulsingDotsLoader size="sm" className="w-2 h-2" />

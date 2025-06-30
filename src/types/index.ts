@@ -11,6 +11,7 @@ export interface Story {
   createdAt: string;
   updatedAt: string;
   archivedAt?: string | null;
+  isOptimistic?: boolean; // STORY-004: Mark optimistic updates
 }
 
 export interface Sprint {

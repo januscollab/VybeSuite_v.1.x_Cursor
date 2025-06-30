@@ -5,6 +5,28 @@ import { generateStory, AIServiceError } from '../utils/aiService';
 import { AI_PROVIDERS } from '../constants/ai';
 import { usePrompts } from '../contexts/PromptContext';
 
+// STORY-002: AI Settings persistence key
+const AI_PROVIDER_STORAGE_KEY = 'devsuite_preferred_ai_provider';
+
+// Load saved AI provider preference
+const loadSavedProvider = (defaultProvider: 'openai' | 'anthropic'): 'openai' | 'anthropic' => {
+  try {
+    const saved = localStorage.getItem(AI_PROVIDER_STORAGE_KEY);
+    return saved === 'openai' || saved === 'anthropic' ? saved : defaultProvider;
+  } catch {
+    return defaultProvider;
+  }
+};
+
+// Save AI provider preference
+const saveProviderPreference = (provider: 'openai' | 'anthropic') => {
+  try {
+    localStorage.setItem(AI_PROVIDER_STORAGE_KEY, provider);
+  } catch (error) {
+    console.warn('Failed to save AI provider preference:', error);
+  }
+};
+
 interface StoryModalProps {
   isOpen: boolean;
   sprintId: string;
@@ -41,7 +63,9 @@ export const StoryModal: React.FC<StoryModalProps> = ({
   const [tagInput, setTagInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
-  const [selectedProvider, setSelectedProvider] = useState<'openai' | 'anthropic'>(aiSettings.defaultProvider);
+  const [selectedProvider, setSelectedProvider] = useState<'openai' | 'anthropic'>(
+    loadSavedProvider(aiSettings.defaultProvider)
+  );
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [includeGithubCodeReview, setIncludeGithubCodeReview] = useState(false);
 
@@ -57,7 +81,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
       setTagInput('');
       setIsGenerating(false);
       setGenerationError(null);
-      setSelectedProvider(aiSettings.defaultProvider);
+      setSelectedProvider(loadSavedProvider(aiSettings.defaultProvider));
       setShowDeleteConfirmation(false);
       setIncludeGithubCodeReview(false);
     } else if (isEditMode && story) {
@@ -73,6 +97,12 @@ export const StoryModal: React.FC<StoryModalProps> = ({
       setFormData({ title: '', description: '', tags: [] });
     }
   }, [isOpen, isEditMode, story, aiSettings.defaultProvider]);
+
+  // STORY-002: Handle provider selection with persistence
+  const handleProviderChange = (provider: 'openai' | 'anthropic') => {
+    setSelectedProvider(provider);
+    saveProviderPreference(provider);
+  };
 
   // Handle escape key
   useEffect(() => {
@@ -267,14 +297,14 @@ export const StoryModal: React.FC<StoryModalProps> = ({
                 </label>
                 
                 {/* AI Provider Selection */}
-                <div className="flex gap-2 mb-2">
+                <div className="mb-2">
                   {AI_PROVIDERS.map((provider) => (
-                    <div key={provider.id} className="flex flex-col gap-1">
+                    <div key={provider.id} className="mb-2">
                       <button
                         type="button"
-                        onClick={() => setSelectedProvider(provider.id)}
+                        onClick={() => handleProviderChange(provider.id)}
                         disabled={!hasValidApiKey(provider.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all mr-2 ${
                           selectedProvider === provider.id
                             ? 'bg-devsuite-primary text-text-inverse'
                             : hasValidApiKey(provider.id)
@@ -288,9 +318,9 @@ export const StoryModal: React.FC<StoryModalProps> = ({
                         )}
                       </button>
                       
-                      {/* GitHub Code Review Checkbox - Only show for Claude */}
+                      {/* STORY-002: GitHub Code Review Checkbox - Horizontal alignment */}
                       {provider.id === 'anthropic' && selectedProvider === 'anthropic' && (
-                        <label className="flex items-center gap-1.5 px-2 py-1 text-xs text-text-secondary cursor-pointer">
+                        <label className="inline-flex items-center gap-1.5 px-2 py-1 text-xs text-text-secondary cursor-pointer">
                           <input
                             type="checkbox"
                             checked={includeGithubCodeReview}
