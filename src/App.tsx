@@ -74,6 +74,9 @@ function AppContent() {
     forceRefresh
   } = useSupabaseStories();
 
+  // CRITICAL FIX: Only show full-screen loader on initial load when no sprints exist
+  const showFullLoader = loading && sprints.length === 0;
+
   const handleCloseBoard = () => {
     setShowDashboard(true);
   };
@@ -202,8 +205,8 @@ function AppContent() {
     <ProtectedRoute>
       <ErrorBoundary>
         <div className="min-h-screen bg-bg-canvas">
-          {/* Loading state overlay */}
-          {loading && (
+          {/* FIXED: Only show loading overlay for initial load when no sprints exist */}
+          {showFullLoader && (
             <div className="min-h-screen bg-bg-canvas flex items-center justify-center">
               <div className="text-center">
                 <PulsingDotsLoader size="lg" className="mx-auto mb-4" />
@@ -243,8 +246,8 @@ function AppContent() {
             </div>
           )}
 
-          {/* Main content - only show when not loading or in error state */}
-          {!loading && !error && (
+          {/* FIXED: Show content immediately when sprints exist, with optional operation loading */}
+          {!showFullLoader && !error && (
             <>
               <Header
                 activeView={activeView}

@@ -176,8 +176,8 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
             Open
           </button>
 
-          {/* Only show Close button if NOT a backlog sprint and NOT priority sprint */}
-          {!isBacklogSprint && !isPrioritySprint && (
+          {/* FIXED: Show Close button for ALL sprints except Backlog (including Priority Sprint) */}
+          {!isBacklogSprint && (
             <div className="relative">
               <button
                 onMouseEnter={handleMouseEnterClose}

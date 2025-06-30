@@ -3,26 +3,40 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// FIXED: More lenient validation - only check if values exist and aren't obvious placeholders
 if (!supabaseUrl || !supabaseAnonKey || 
-    supabaseUrl === 'https://your-project-ref.supabase.co' || 
+    supabaseUrl.includes('your-project-ref') || 
+    supabaseAnonKey.includes('your-anon-key') ||
+    supabaseUrl === 'your_supabase_project_url' ||
+    supabaseAnonKey === 'your_supabase_anon_key' ||
+    supabaseUrl === 'https://your-project-ref.supabase.co' ||
     supabaseAnonKey === 'your-anon-key-here') {
-  throw new Error(`
-    ❌ Supabase Configuration Error
-    
-    Missing or invalid Supabase environment variables. Please:
-    
-    1. Go to your Supabase project dashboard: https://supabase.com/dashboard
-    2. Navigate to Project Settings > API
-    3. Copy your Project URL and anon/public key
-    4. Update the .env file in your project root with:
-       VITE_SUPABASE_URL=your-actual-project-url
-       VITE_SUPABASE_ANON_KEY=your-actual-anon-key
-    5. Restart your development server
-    
-    Current values:
-    - VITE_SUPABASE_URL: ${supabaseUrl || 'undefined'}
-    - VITE_SUPABASE_ANON_KEY: ${supabaseAnonKey ? '[SET]' : 'undefined'}
-  `);
+  
+  console.warn('⚠️ Supabase configuration may be incomplete');
+  console.log('Current URL:', supabaseUrl);
+  console.log('Key status:', supabaseAnonKey ? '[SET]' : '[MISSING]');
+  
+  // Don't throw error immediately - let it try to connect first
+  // Only throw if both are completely missing
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(`
+      ❌ Supabase Configuration Error
+      
+      Missing Supabase environment variables. Please:
+      
+      1. Go to your Supabase project dashboard: https://supabase.com/dashboard
+      2. Navigate to Project Settings > API
+      3. Copy your Project URL and anon/public key
+      4. Update the .env file in your project root with:
+         VITE_SUPABASE_URL=your-actual-project-url
+         VITE_SUPABASE_ANON_KEY=your-actual-anon-key
+      5. Restart your development server
+      
+      Current values:
+      - VITE_SUPABASE_URL: ${supabaseUrl || 'undefined'}
+      - VITE_SUPABASE_ANON_KEY: ${supabaseAnonKey ? '[SET]' : 'undefined'}
+    `);
+  }
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

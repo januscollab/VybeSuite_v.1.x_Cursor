@@ -76,19 +76,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // FIXED: Enhanced signup with better error handling and logging
   const signUp = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signUp({
+      console.log('Attempting signup for:', email);
+      
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            email_confirmed: false // Let Supabase handle confirmation
+          }
         }
       });
-      return { error };
+      
+      console.log('Signup response:', { 
+        user: data.user?.id, 
+        session: !!data.session, 
+        error: error?.message 
+      });
+      
+      if (error) {
+        console.error('Signup error details:', error);
+        return { error };
+      }
+      
+      // Success - user created (may need email confirmation)
+      console.log('User successfully created:', data.user?.email);
+      return { error: null };
     } catch (error) {
-      console.error('Sign up error:', error);
+      console.error('Signup exception:', error);
       return { error: error as AuthError };
     } finally {
       setLoading(false);
