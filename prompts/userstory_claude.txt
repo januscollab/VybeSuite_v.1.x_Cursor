@@ -28,7 +28,6 @@ The description should be a single, well-formatted paragraph or simple bullet po
 - **Description**: Include as PLAIN TEXT ONLY:
   - Clear acceptance criteria (3-5 bullet points max)
   - User experience considerations
-  - Business value and success metrics
   - Any key functional requirements
 - **Tags**: Suggest 3-5 relevant tags based on:
   - Feature type (ui, backend, integration, etc.)
