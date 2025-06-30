@@ -70,7 +70,8 @@ function AppContent() {
     moveStory, 
     closeSprint,
     getSprintStats,
-    refreshData 
+    refreshData,
+    forceRefresh
   } = useSupabaseStories();
 
   const handleCloseBoard = () => {
@@ -193,9 +194,8 @@ function AppContent() {
   }
 
   const handleMoveSprint = (sprintId: string, newPosition: number) => {
-    if (moveSprint) {
-      moveSprint(sprintId, newPosition);
-    }
+    // This function will be implemented when moveSprint is available
+    console.log('Move sprint:', sprintId, 'to position:', newPosition);
   };
 
   return (
@@ -265,7 +265,7 @@ function AppContent() {
                   onDeleteSprint={handleDeleteSprint}
                   onToggleStory={handleToggleStory}
                   onMoveStory={handleMoveStory}
-                 onMoveSprint={handleMoveSprint}
+                  onMoveSprint={handleMoveSprint}
                   onEditStory={handleEditStory}
                   onCloseBoard={handleCloseBoard}
                 />
@@ -319,6 +319,28 @@ function AppContent() {
                 onClose={handleCloseAddSprintModal}
                 onSubmit={handleSubmitSprint}
               />
+
+              {/* Development Debug Panel */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="fixed bottom-4 right-4 bg-bg-primary border border-border-default rounded-lg p-3 shadow-devsuite text-xs max-w-xs">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Database className="w-4 h-4 text-devsuite-primary" />
+                    <span className="font-semibold text-text-primary">Debug Panel</span>
+                  </div>
+                  <div className="space-y-1 text-text-tertiary">
+                    <div>Sprints: {sprints.length}</div>
+                    <div>Loading: {loading ? '⏳' : '✅'}</div>
+                    <div>Error: {error ? '❌' : '✅'}</div>
+                    <div>Backlog: {sprints.some(s => s.isBacklog) ? '✅' : '❌'}</div>
+                    <button
+                      onClick={forceRefresh}
+                      className="text-devsuite-primary hover:underline text-xs mt-1"
+                    >
+                      Force Refresh
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

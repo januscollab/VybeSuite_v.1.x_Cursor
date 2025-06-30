@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+// src/hooks/useSupabaseStories.ts - FIXED VERSION
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Story, Sprint, SprintStats } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,151 +20,187 @@ export const useSupabaseStories = () => {
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [operationLoading, setOperationLoading] = useState<Record<string, boolean>>({});
+  const backlogCreationRef = useRef(false);
 
   const { archiveAllStoriesInSprint, archiveCompletedStories } = useArchive();
 
-  // CRITICAL: Ensure backlog sprint exists for the user - ALWAYS LAST POSITION
+  // FIXED: Simplified backlog sprint creation with better error handling
   const ensureBacklogSprintExists = useCallback(async () => {
-    if (!user) return;
-
+    if (!user || backlogCreationRef.current) return;
+    
     try {
-      // Check if backlog sprint already exists (including archived ones)
+      backlogCreationRef.current = true;
+      
+      // Check if backlog sprint exists
       const { data: existingBacklog, error: checkError } = await supabase
         .from('sprints')
         .select('id, archived_at, position')
         .eq('user_id', user.id)
         .eq('is_backlog', true)
-        .limit(1);
+        .single();
 
-      if (checkError) throw checkError;
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+        throw checkError;
+      }
 
-      if (existingBacklog && existingBacklog.length > 0) {
-        // If backlog exists but is archived, unarchive it
-        if (existingBacklog[0].archived_at) {
+      if (existingBacklog) {
+        // Unarchive if needed
+        if (existingBacklog.archived_at) {
           const { error: unarchiveError } = await supabase
             .from('sprints')
             .update({ 
               archived_at: null,
               updated_at: new Date().toISOString()
             })
-            .eq('id', existingBacklog[0].id);
+            .eq('id', existingBacklog.id);
 
           if (unarchiveError) throw unarchiveError;
-          console.log('Backlog sprint unarchived successfully');
+          console.log('✅ Backlog sprint unarchived');
         }
         
-        // CRITICAL: Ensure backlog is ALWAYS positioned LAST
-        const { data: allSprints } = await supabase
-          .from('sprints')
-          .select('position')
-          .eq('user_id', user.id)
-          .is('archived_at', null)
-          .neq('is_backlog', true)
-          .order('position', { ascending: false })
-          .limit(1);
-
-        const maxNonBacklogPosition = allSprints?.[0]?.position || 0;
-        const requiredBacklogPosition = maxNonBacklogPosition + 1;
-
-        // Update backlog position to be last if needed
-        if (existingBacklog[0].position !== requiredBacklogPosition) {
-          await supabase
-            .from('sprints')
-            .update({ 
-              position: requiredBacklogPosition,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', existingBacklog[0].id);
-        }
-        
-        return; // Backlog exists and is properly positioned
-      } else {
-        // CRITICAL: Create new backlog sprint if it doesn't exist
-        const { data: allSprints } = await supabase
-          .from('sprints')
-          .select('position')
-          .eq('user_id', user.id)
-          .is('archived_at', null)
-          .neq('is_backlog', true)  // Exclude any existing backlog from position calculation
-          .order('position', { ascending: false })
-          .limit(1);
-
-        const nextPosition = (allSprints?.[0]?.position || 0) + 1;
-
-        const { error: createError } = await supabase
-          .from('sprints')
-          .insert({
-            id: `backlog-${user.id}`,
-            title: 'Backlog - Future Enhancements',
-            description: 'Future enhancements and feature ideas',
-            icon: '📋',
-            is_backlog: true,  // CRITICAL: Mark as backlog sprint
-            is_draggable: false,
-            user_id: user.id,
-            position: nextPosition
-          });
-
-        if (createError) {
-          // Handle duplicate key constraint specifically (error code 23505)
-          if (createError.code === '23505') {
-            console.log('Backlog sprint already exists (race condition detected):', createError.message);
-            // This is not critical - another process created the sprint
-            return;
-          } else {
-            console.error('CRITICAL: Error creating backlog sprint:', createError);
-            // Don't throw here as this is not critical for app functionality
-          }
-        } else {
-          console.log('Backlog sprint created successfully');
-        }
+        // Fix position to be last
+        await fixBacklogPosition();
+        return;
       }
+
+      // Create new backlog sprint
+      await createBacklogSprint();
+      
     } catch (err) {
-      console.error('Error ensuring backlog sprint exists:', err);
-      // Don't throw here but log as critical issue
+      console.error('❌ Error ensuring backlog sprint exists:', err);
+      // Don't throw - this shouldn't break the app
+    } finally {
+      backlogCreationRef.current = false;
     }
   }, [user]);
 
-  // Load data from Supabase
-  const loadData = useCallback(async () => {
+  // FIXED: Simplified backlog position fixing
+  const fixBacklogPosition = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      // Get max position of non-backlog sprints
+      const { data: maxPositionResult } = await supabase
+        .from('sprints')
+        .select('position')
+        .eq('user_id', user.id)
+        .is('archived_at', null)
+        .eq('is_backlog', false)
+        .order('position', { ascending: false })
+        .limit(1);
+
+      const maxPosition = maxPositionResult?.[0]?.position || 0;
+      const backlogPosition = maxPosition + 1;
+
+      // Update backlog position
+      const { error } = await supabase
+        .from('sprints')
+        .update({ 
+          position: backlogPosition,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .eq('is_backlog', true);
+
+      if (error) throw error;
+      console.log('✅ Backlog position fixed:', backlogPosition);
+      
+    } catch (err) {
+      console.error('❌ Error fixing backlog position:', err);
+    }
+  }, [user]);
+
+  // FIXED: Cleaner backlog creation
+  const createBacklogSprint = useCallback(async () => {
+    if (!user) return;
+
+    const { data: maxPositionResult } = await supabase
+      .from('sprints')
+      .select('position')
+      .eq('user_id', user.id)
+      .is('archived_at', null)
+      .order('position', { ascending: false })
+      .limit(1);
+
+    const nextPosition = (maxPositionResult?.[0]?.position || 0) + 1;
+
+    const { error } = await supabase
+      .from('sprints')
+      .insert({
+        id: `backlog-${user.id}-${Date.now()}`, // Ensure uniqueness
+        title: 'Backlog - Future Enhancements',
+        description: 'Future enhancements and feature ideas',
+        icon: '📋',
+        is_backlog: true,
+        is_draggable: false,
+        user_id: user.id,
+        position: nextPosition
+      });
+
+    if (error) {
+      if (error.code === '23505') {
+        console.log('⚠️ Backlog sprint already exists (race condition)');
+        return;
+      }
+      throw error;
+    }
+
+    console.log('✅ Backlog sprint created successfully');
+  }, [user]);
+
+  // FIXED: Load data with better error handling and cache busting
+  const loadData = useCallback(async (forceRefresh = false) => {
     if (!user) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      // CRITICAL: Ensure backlog sprint exists BEFORE loading data
+      // Clear any cached data if force refresh
+      if (forceRefresh) {
+        localStorage.removeItem(CACHE_KEY);
+      }
+
+      // Ensure backlog exists first
       await ensureBacklogSprintExists();
 
-      // Fetch sprints
+      // Fetch sprints with explicit ordering
       const { data: sprintsData, error: sprintsError } = await supabase
         .from('sprints')
         .select('*')
         .eq('user_id', user.id)
         .is('archived_at', null)
-        .order('position');
+        .order('position', { ascending: true });
 
       if (sprintsError) throw sprintsError;
 
-      // Fetch stories for all sprints
+      // Fetch stories
       const { data: storiesData, error: storiesError } = await supabase
         .from('stories')
         .select('*')
         .is('archived_at', null)
-        .order('position');
+        .order('position', { ascending: true });
 
       if (storiesError) throw storiesError;
 
-      // Group stories by sprint
-      const sprintsWithStories = (sprintsData || []).map(sprint => ({
-        ...sprint,
+      // FIXED: Build sprints with stories and proper typing
+      const sprintsWithStories: Sprint[] = (sprintsData || []).map(sprint => ({
+        id: sprint.id,
+        user_id: sprint.user_id,
+        title: sprint.title,
+        description: sprint.description || '',
+        icon: sprint.icon,
+        isBacklog: sprint.is_backlog || false,
+        isDraggable: sprint.is_draggable !== false, // Default to true unless explicitly false
+        position: sprint.position || 0,
         stories: (storiesData || [])
           .filter(story => story.sprint_id === sprint.id)
           .map(story => ({
             id: story.id,
             number: story.number,
             title: story.title,
-            description: story.description,
-            completed: story.completed,
+            description: story.description || '',
+            completed: story.completed || false,
             completedAt: story.completed_at,
             date: story.date,
             tags: story.tags || [],
@@ -174,25 +211,31 @@ export const useSupabaseStories = () => {
           }))
       }));
       
-      // CRITICAL: Sort sprints to ensure backlog is always last
+      // FIXED: Proper sprint sorting
       const sortedSprints = sprintsWithStories.sort((a, b) => {
-        // Priority sprint first (position 0)
+        // Priority sprint always first
         if (a.id === 'priority') return -1;
         if (b.id === 'priority') return 1;
         
-        // Backlog sprint always last
-        if (a.is_backlog && !b.is_backlog) return 1;
-        if (!a.is_backlog && b.is_backlog) return -1;
+        // Backlog always last
+        if (a.isBacklog && !b.isBacklog) return 1;
+        if (!a.isBacklog && b.isBacklog) return -1;
         
         // Regular sprints by position
-        return (a.position || 0) - (b.position || 0);
+        return a.position - b.position;
       });
 
       setSprints(sortedSprints);
       setIsInitialized(true);
+      
+      console.log('✅ Data loaded successfully:', {
+        sprintsCount: sortedSprints.length,
+        backlogExists: sortedSprints.some(s => s.isBacklog),
+        priorityExists: sortedSprints.some(s => s.id === 'priority')
+      });
+      
     } catch (err) {
-      console.error('Error loading data:', err);
-      // Check for network/configuration errors
+      console.error('❌ Error loading data:', err);
       if (err instanceof TypeError && err.message === 'Failed to fetch') {
         setError('Missing Supabase configuration or network error. Please check your Supabase URL and API key.');
       } else {
@@ -203,71 +246,40 @@ export const useSupabaseStories = () => {
     }
   }, [user, ensureBacklogSprintExists]);
 
-  // Add a new story
-  const addStory = useCallback(async (sprintId: string, storyData: { title: string; description?: string; tags?: string[] }) => {
+  // FIXED: Force refresh function for troubleshooting
+  const forceRefresh = useCallback(() => {
+    console.log('🔄 Force refreshing data...');
+    loadData(true);
+  }, [loadData]);
+
+  // Add story with better error handling
+  const addStory = useCallback(async (sprintId: string, storyData: { 
+    title: string; 
+    description?: string; 
+    tags?: string[];
+    priority?: string;
+    risk?: string;
+  }) => {
     if (!user || !userProfile) return;
 
-    const operationId = `add-story-${Date.now()}`;
-    setOperationLoading(prev => ({ ...prev, [operationId]: true }));
-
     try {
-      // Generate unique story number with retry logic
-      let newNumber: string;
-      let attempts = 0;
-      const maxAttempts = 5;
-      
-      do {
-        const { data: lastStory, error: fetchError } = await supabase
-          .from('stories')
-          .select('number')
-          .order('created_at', { ascending: false })
-          .limit(1);
+      setOperationLoading(prev => ({ ...prev, [`add-story-${sprintId}`]: true }));
 
-        if (fetchError) throw fetchError;
+      // Generate story number
+      const { data: existingStories } = await supabase
+        .from('stories')
+        .select('number')
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-        let lastNumber = 0;
-        if (lastStory?.[0]?.number) {
-          // Extract numeric part from format like "PREFIX-001"
-          const match = lastStory[0].number.match(/(\d+)$/);
-          if (match) {
-            lastNumber = parseInt(match[1], 10);
-          }
-        }
-        
-        // Add random offset to prevent collisions in concurrent requests
-        const offset = attempts > 0 ? Math.floor(Math.random() * 10) + 1 : 1;
-        
-        // Use the story number prefix from user settings
-        const prefix = userProfile.settings.storyNumberPrefix || 'STORY';
-        newNumber = `${prefix}-${String(lastNumber + offset).padStart(3, '0')}`;
-        
-        // Check if this number already exists
-        const { data: existingStory } = await supabase
-          .from('stories')
-          .select('id')
-          .eq('number', newNumber)
-          .limit(1);
-        
-        if (!existingStory || existingStory.length === 0) {
-          break; // Number is unique, we can use it
-        }
-        
-        attempts++;
-      } while (attempts < maxAttempts);
-      
-      if (attempts >= maxAttempts) {
-        // Fallback to timestamp-based number with user's prefix
-        const prefix = userProfile.settings.storyNumberPrefix || 'STORY';
-        newNumber = `${prefix}-${Date.now().toString().slice(-6)}`;
-      }
-
-      // Validate required fields
-      if (!storyData.title || storyData.title.trim() === '') {
-        throw new Error('Story title is required');
-      }
+      const lastNumber = existingStories?.[0]?.number || `${userProfile.settings.storyNumberPrefix}-000`;
+      const numberMatch = lastNumber.match(/(\d+)$/);
+      const nextNumber = numberMatch ? parseInt(numberMatch[1]) + 1 : 1;
+      const paddedNumber = nextNumber.toString().padStart(3, '0');
+      const storyNumber = `${userProfile.settings.storyNumberPrefix}-${paddedNumber}`;
 
       // Get next position in sprint
-      const { data: lastStoryInSprint } = await supabase
+      const { data: sprintStories } = await supabase
         .from('stories')
         .select('position')
         .eq('sprint_id', sprintId)
@@ -275,64 +287,33 @@ export const useSupabaseStories = () => {
         .order('position', { ascending: false })
         .limit(1);
 
-      const nextPosition = (lastStoryInSprint?.[0]?.position || 0) + 1;
+      const nextPosition = (sprintStories?.[0]?.position || 0) + 1;
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('stories')
         .insert({
-          number: newNumber,
+          number: storyNumber,
           title: storyData.title,
           description: storyData.description || '',
           tags: storyData.tags || [],
           sprint_id: sprintId,
-          date: new Date().toISOString().split('T')[0],
-          position: nextPosition
-        })
-        .select()
-        .single();
+          position: nextPosition,
+          completed: false,
+          date: new Date().toLocaleDateString('en-GB')
+        });
 
       if (error) throw error;
-
-      // Update local state
-      setSprints(prev => prev.map(sprint => 
-        sprint.id === sprintId 
-          ? {
-              ...sprint,
-              stories: [...sprint.stories, {
-                id: data.id,
-                number: data.number,
-                title: data.title,
-                description: data.description,
-                completed: data.completed,
-                completedAt: data.completed_at,
-                date: data.date,
-                tags: data.tags || [],
-                sprintId: data.sprint_id,
-                createdAt: data.created_at,
-                updatedAt: data.updated_at,
-                archivedAt: data.archived_at
-              }]
-            }
-          : sprint
-      ));
-    } catch (err) {
-      console.error('Error adding story:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to add story';
-      setError(errorMessage);
       
-      // Show user-friendly error for common issues
-      if (errorMessage.includes('duplicate key')) {
-        setError('Story number conflict. Please try again.');
-      } else if (errorMessage.includes('not-null constraint')) {
-        setError('Missing required story information. Please check all fields.');
-      }
+      console.log('✅ Story added successfully:', storyNumber);
+      await loadData(true); // Force refresh after adding
+      
+    } catch (err) {
+      console.error('❌ Error adding story:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add story');
     } finally {
-      setOperationLoading(prev => {
-        const { [operationId]: _, ...rest } = prev;
-        return rest;
-      });
+      setOperationLoading(prev => ({ ...prev, [`add-story-${sprintId}`]: false }));
     }
-  }, [user, userProfile]);
+  }, [user, userProfile, loadData]);
 
   // Update an existing story
   const updateStory = useCallback(async (storyId: string, storyData: { title: string; description?: string; tags?: string[] }) => {
@@ -470,7 +451,7 @@ export const useSupabaseStories = () => {
       const { data, error } = await supabase
         .from('sprints')
         .insert({
-         id: crypto.randomUUID(),
+          id: crypto.randomUUID(),
           title,
           description: description || '',
           icon: icon || '📋',
@@ -770,53 +751,45 @@ export const useSupabaseStories = () => {
     };
   }, [sprints]);
 
-  // Load data on mount and user change
+  // Initialize data on mount and user change
   useEffect(() => {
-    if (user && !isInitialized) {
-      // Ensure backlog exists before loading data
+    if (user) {
       loadData();
+    } else {
+      setSprints([]);
+      setIsInitialized(false);
     }
-  }, [user, isInitialized, loadData]);
+  }, [user, loadData]);
 
   // Set up real-time subscriptions
   useEffect(() => {
     if (!user || !isInitialized) return;
 
-    const storiesSubscription = supabase
-      .channel('stories-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'stories'
-        },
-        (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log('Stories change received:', payload);
-          loadData();
+    const sprintsSubscription = supabase
+      .channel('sprints_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'sprints', filter: `user_id=eq.${user.id}` },
+        () => {
+          console.log('🔄 Sprints changed, refreshing...');
+          loadData(true);
         }
       )
       .subscribe();
 
-    const sprintsSubscription = supabase
-      .channel('sprints-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'sprints'
-        },
-        (payload: RealtimePostgresChangesPayload<any>) => {
-          console.log('Sprints change received:', payload);
-          loadData();
+    const storiesSubscription = supabase
+      .channel('stories_changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'stories' },
+        () => {
+          console.log('🔄 Stories changed, refreshing...');
+          loadData(true);
         }
       )
       .subscribe();
 
     return () => {
-      storiesSubscription.unsubscribe();
       sprintsSubscription.unsubscribe();
+      storiesSubscription.unsubscribe();
     };
   }, [user, isInitialized, loadData]);
 
@@ -824,6 +797,7 @@ export const useSupabaseStories = () => {
     sprints,
     loading,
     error,
+    isInitialized,
     operationLoading,
     addStory,
     updateStory,
@@ -835,6 +809,7 @@ export const useSupabaseStories = () => {
     moveStory,
     closeSprint,
     getSprintStats,
+    forceRefresh, // Export for debugging
     refreshData: loadData
   };
 };
