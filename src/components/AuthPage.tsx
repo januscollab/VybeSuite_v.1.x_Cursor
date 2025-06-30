@@ -42,7 +42,7 @@ export const AuthPage: React.FC = () => {
       setIsSubmitting(false);
 
       if (error) {
-        setError(error.message);
+        setError('Unable to send reset email. Please check your email address and try again.');
       } else {
         setSuccess('Password reset email sent! Check your inbox.');
         setMode('signin');
@@ -65,12 +65,32 @@ export const AuthPage: React.FC = () => {
     if (mode === 'signin') {
       const { error } = await signIn(email, password);
       if (error) {
-        setError(error.message);
+        // Provide user-friendly error messages for common scenarios
+        if (error.message.includes('Invalid login credentials') || error.message.includes('invalid_credentials')) {
+          setError('Invalid email or password. Please check your credentials and try again.');
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('Please check your email and click the confirmation link before signing in.');
+        } else if (error.message.includes('Too many requests')) {
+          setError('Too many sign-in attempts. Please wait a moment before trying again.');
+        } else {
+          setError('Unable to sign in. Please try again or contact support if the problem persists.');
+        }
       }
     } else if (mode === 'signup') {
       const { error } = await signUp(email, password);
       if (error) {
-        setError(error.message);
+        // Provide user-friendly error messages for common scenarios
+        if (error.message.includes('User already registered') || error.message.includes('user_already_exists')) {
+          setError('An account with this email already exists. Please sign in instead or use a different email address.');
+        } else if (error.message.includes('Password should be at least')) {
+          setError('Password must be at least 6 characters long.');
+        } else if (error.message.includes('Invalid email')) {
+          setError('Please enter a valid email address.');
+        } else if (error.message.includes('Signup is disabled')) {
+          setError('Account registration is currently disabled. Please contact support.');
+        } else {
+          setError('Unable to create account. Please try again or contact support if the problem persists.');
+        }
       } else {
         setSuccess('Account created! Please check your email to verify your account.');
         setMode('signin');
