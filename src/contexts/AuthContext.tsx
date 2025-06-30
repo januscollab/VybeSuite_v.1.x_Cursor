@@ -100,7 +100,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
-        console.error('Signup error details:', error);
+        // Handle expected authentication outcomes differently
+        if (error.message === 'User already registered' || error.code === 'user_already_exists') {
+          console.warn('Signup attempt with existing email:', email);
+        } else {
+          console.error('Signup error details:', error);
+        }
         return { error };
       }
       
