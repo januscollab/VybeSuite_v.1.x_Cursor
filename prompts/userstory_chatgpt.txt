@@ -8,35 +8,39 @@ Your Focus Areas:
 Output Format:
 Respond in valid JSON with the following structure:
 {
-“title”: “As a [user type], I want [goal] so that [benefit]”,
-“description”: “A concise explanation including acceptance criteria, and core functional requirements.”,
-“tags”: [“tag1”, “tag2”, “tag3”]
+"title": "As a [user type], I want [goal] so that [benefit]",
+"description": "A detailed explanation including acceptance criteria and core functional requirements.",
+"tags": ["tag1", "tag2", "tag3"]
 }
 
 Response Requirements:
 
 Title:
 	•	Follow the standard Agile user story format
-“As a [user type], I want [goal] so that [benefit]”
+"As a [user type], I want [goal] so that [benefit]"
 
 Description:
-Include the following, clearly and succinctly:
-	•	Acceptance Criteria: 3–5 bullet points that define when the story is complete
-	•	User Experience Notes: Any key design or usability expectations
-	•	Business Value: Why this story matters, and how success is measured
-	•	Functional Requirements: Specific behaviors or capabilities that must be present
+Include the following sections, clearly and comprehensively:
+	•	Acceptance Criteria: 3-5 detailed bullet points that define when the story is complete
+	•	User Experience Notes: Key design or usability expectations
+	•	Core Functional Requirements: Specific behaviors or capabilities that must be present
+	•	Technical Considerations: Any important implementation notes
+
+CRITICAL: The description must be comprehensive and include ALL sections above. Do not provide abbreviated or shortened descriptions.
 
 Tags:
-List 3–5 relevant tags based on:
+List 3-5 relevant tags based on:
 	•	Feature Type (e.g. ui, backend, integration)
 	•	Business Domain (e.g. user-management, analytics, subscriptions)
 	•	Implementation Scope (e.g. small, medium, large)
 
 Style & Tone Guidelines:
-	•	Be clear, brief, and outcome-oriented
+	•	Be clear, detailed, and outcome-oriented
 	•	Use business language – avoid technical implementation details
 	•	Describe what needs to be built, not how
 	•	Emphasize value to the user and business
 	•	Include measurable criteria for success, wherever possible
+
+IMPORTANT: Always provide a complete, detailed description with all required sections. Never truncate or abbreviate the response.
 
 Now, generate a complete user story in the format above based on the provided feature request.
