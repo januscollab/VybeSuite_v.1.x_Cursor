@@ -74,14 +74,14 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
   // Sort sprints by position to ensure Priority Sprint is always first
   const sortedSprints = [...sprints].sort((a, b) => {
     // Enhanced sorting: Priority Sprint first, then by position, Backlog always last
-    const getPriority = (sprint: Sprint) => {
+    const getSprintPriority = (sprint: Sprint) => {
       if (sprint.id === 'priority') return -1000; // Always first
       if (sprint.isBacklog) return 1000; // Always last
       return sprint.position || 0; // Normal position for user sprints
     };
     
-    const aPos = getPriority(a);
-    const bPos = getPriority(b);
+    const aPos = getSprintPriority(a);
+    const bPos = getSprintPriority(b);
     return aPos - bPos;
   });
 
@@ -103,7 +103,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
           Priority Sprint is always first, user sprints can fill remaining slots
         */}
         {allNonBacklogSprints.length > 0 && (
-          <Droppable droppableId="sprints" type="sprint" direction="vertical">
+          <Droppable droppableId="sprints" type="sprint" direction="horizontal">
             {(provided, snapshot) => (
               <div
                 ref={provided.innerRef}
@@ -119,9 +119,9 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
                 <div className="grid grid-cols-2 gap-5">
                   {allNonBacklogSprints.map((sprint, index) => {
                     // Only user sprints are draggable, not Priority Sprint
-                    const isDraggableSpring = sprint.id !== 'priority' && sprint.isDraggable;
+                    const isDraggableSprint = sprint.id !== 'priority' && sprint.isDraggable && !sprint.isBacklog;
                     
-                    return isDraggableSpring ? (
+                    return isDraggableSprint ? (
                       <Draggable key={sprint.id} draggableId={sprint.id} index={index - 1} type="sprint">
                       {(provided, snapshot) => (
                         <div
@@ -137,7 +137,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
                             icon={sprint.icon}
                             stories={sprint.stories}
                             stats={getSprintStats(sprint.id)}
-                            isDraggable={isDraggableSpring}
+                            isDraggable={isDraggableSprint}
                             operationLoading={operationLoading}
                             dragHandleProps={provided.dragHandleProps}
                             onAddStory={() => onAddStory(sprint.id)}
@@ -174,7 +174,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
                   
                   {/* 
                     FILL EMPTY SPACE IF ODD NUMBER OF NON-BACKLOG SPRINTS
-                    Ensures grid layout remains consistent
+                    Ensures 2-column grid layout remains consistent
                   */}
                   {allNonBacklogSprints.length % 2 === 1 && <div></div>}
                 </div>
@@ -186,7 +186,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
 
         {/* 
           BACKLOG - FUTURE ENHANCEMENTS SPRINT - FULL WIDTH WITH TWO-COLUMN STORIES
-          This sprint is always positioned last and uses the full page width
+          CRITICAL: This sprint is ALWAYS positioned last and uses the FULL page width
           Stories are displayed in a two-column layout for better visibility
           CRITICAL REQUIREMENTS:
           - ALWAYS 100% page width
@@ -195,7 +195,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
           - NEVER draggable or deletable
         */}
         {backlogSprint && (
-          <div className="w-full">
+          <div className="w-full">  {/* CRITICAL: Full width container for backlog */}
             <DroppableSprintCard
               id={backlogSprint.id}
               title={backlogSprint.title}

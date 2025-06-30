@@ -22,7 +22,7 @@ export const useSupabaseStories = () => {
 
   const { archiveAllStoriesInSprint, archiveCompletedStories } = useArchive();
 
-  // Ensure backlog sprint exists for the user
+  // CRITICAL: Ensure backlog sprint exists for the user - ALWAYS LAST POSITION
   const ensureBacklogSprintExists = useCallback(async () => {
     if (!user) return;
 
@@ -30,7 +30,7 @@ export const useSupabaseStories = () => {
       // Check if backlog sprint already exists (including archived ones)
       const { data: existingBacklog, error: checkError } = await supabase
         .from('sprints')
-        .select('id, archived_at')
+        .select('id, archived_at, position')
         .eq('user_id', user.id)
         .eq('is_backlog', true)
         .limit(1);
@@ -51,16 +51,40 @@ export const useSupabaseStories = () => {
           if (unarchiveError) throw unarchiveError;
           console.log('Backlog sprint unarchived successfully');
         }
-        // If backlog exists and is not archived, do nothing
-        return;
-      } else {
-        // If backlog doesn't exist, create it
-        // Get the highest position to place backlog at the end
+        
+        // CRITICAL: Ensure backlog is ALWAYS positioned LAST
         const { data: allSprints } = await supabase
           .from('sprints')
           .select('position')
           .eq('user_id', user.id)
           .is('archived_at', null)
+          .neq('is_backlog', true)
+          .order('position', { ascending: false })
+          .limit(1);
+
+        const maxNonBacklogPosition = allSprints?.[0]?.position || 0;
+        const requiredBacklogPosition = maxNonBacklogPosition + 1;
+
+        // Update backlog position to be last if needed
+        if (existingBacklog[0].position !== requiredBacklogPosition) {
+          await supabase
+            .from('sprints')
+            .update({ 
+              position: requiredBacklogPosition,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingBacklog[0].id);
+        }
+        
+        return; // Backlog exists and is properly positioned
+      } else {
+        // CRITICAL: Create new backlog sprint if it doesn't exist
+        const { data: allSprints } = await supabase
+          .from('sprints')
+          .select('position')
+          .eq('user_id', user.id)
+          .is('archived_at', null)
+          .neq('is_backlog', true)  // Exclude any existing backlog from position calculation
           .order('position', { ascending: false })
           .limit(1);
 
@@ -73,7 +97,7 @@ export const useSupabaseStories = () => {
             title: 'Backlog - Future Enhancements',
             description: 'Future enhancements and feature ideas',
             icon: '📋',
-            is_backlog: true,
+            is_backlog: true,  // CRITICAL: Mark as backlog sprint
             is_draggable: false,
             user_id: user.id,
             position: nextPosition
@@ -82,11 +106,11 @@ export const useSupabaseStories = () => {
         if (createError) {
           // Handle duplicate key constraint specifically (error code 23505)
           if (createError.code === '23505') {
-            console.warn('Backlog sprint already exists (race condition detected):', createError.message);
+            console.log('Backlog sprint already exists (race condition detected):', createError.message);
             // This is not critical - another process created the sprint
             return;
           } else {
-            console.error('Error creating backlog sprint:', createError);
+            console.error('CRITICAL: Error creating backlog sprint:', createError);
             // Don't throw here as this is not critical for app functionality
           }
         } else {
@@ -95,7 +119,7 @@ export const useSupabaseStories = () => {
       }
     } catch (err) {
       console.error('Error ensuring backlog sprint exists:', err);
-      // Don't throw here as this is not critical for app functionality
+      // Don't throw here but log as critical issue
     }
   }, [user]);
 
@@ -107,7 +131,7 @@ export const useSupabaseStories = () => {
       setLoading(true);
       setError(null);
 
-      // Ensure backlog sprint exists for this user
+      // CRITICAL: Ensure backlog sprint exists BEFORE loading data
       await ensureBacklogSprintExists();
 
       // Fetch sprints
@@ -149,8 +173,22 @@ export const useSupabaseStories = () => {
             archivedAt: story.archived_at
           }))
       }));
+      
+      // CRITICAL: Sort sprints to ensure backlog is always last
+      const sortedSprints = sprintsWithStories.sort((a, b) => {
+        // Priority sprint first (position 0)
+        if (a.id === 'priority') return -1;
+        if (b.id === 'priority') return 1;
+        
+        // Backlog sprint always last
+        if (a.is_backlog && !b.is_backlog) return 1;
+        if (!a.is_backlog && b.is_backlog) return -1;
+        
+        // Regular sprints by position
+        return (a.position || 0) - (b.position || 0);
+      });
 
-      setSprints(sprintsWithStories);
+      setSprints(sortedSprints);
       setIsInitialized(true);
     } catch (err) {
       console.error('Error loading data:', err);
@@ -384,7 +422,7 @@ export const useSupabaseStories = () => {
   const addSprint = useCallback(async (title: string, icon: string, description: string, isBacklog: boolean, isDraggable: boolean) => {
     if (!user) return;
 
-    // Prevent creating additional backlog sprints
+    // CRITICAL: Prevent creating additional backlog sprints
     if (isBacklog) {
       console.warn('Cannot create additional backlog sprints - one already exists');
       setError('Only one backlog sprint is allowed per user');
@@ -406,7 +444,7 @@ export const useSupabaseStories = () => {
       let nextPosition: number;
       
       if (isBacklog) {
-        // Backlog sprint should always be last
+        // CRITICAL: Backlog sprint should always be last (this should never happen due to prevention above)
         nextPosition = (allSprints?.[0]?.position || 0) + 1;
       } else {
         // Find the backlog sprint position
@@ -414,7 +452,7 @@ export const useSupabaseStories = () => {
         
         if (backlogSprint) {
           // Insert new sprint before the backlog
-          nextPosition = backlogSprint.position;
+          nextPosition = Math.max(1, backlogSprint.position); // Ensure position is at least 1
           
           // Update backlog position to be after the new sprint
           const { error: updateError } = await supabase
@@ -436,7 +474,7 @@ export const useSupabaseStories = () => {
           title,
           description: description || '',
           icon: icon || '📋',
-          is_backlog: isBacklog,        // Ensure backlog flag is set correctly
+          is_backlog: false,  // User sprints are never backlog
           is_draggable: isBacklog ? false : isDraggable,  // Backlog sprints are never draggable
           user_id: user.id,
           position: nextPosition
@@ -459,11 +497,51 @@ export const useSupabaseStories = () => {
     }
   }, [user, loadData]);
 
+  // Delete sprint
+  const deleteSprint = useCallback(async (sprintId: string) => {
+    // CRITICAL: Prevent deletion of backlog sprint and priority sprint
+    const sprint = sprints.find(s => s.id === sprintId);
+    if (sprint?.isBacklog) {
+      console.warn('Cannot delete backlog sprint');
+      setError('Backlog sprint cannot be deleted');
+      return;
+    }
+
+    if (sprintId === 'priority') {
+      console.warn('Cannot delete priority sprint');
+      setError('Priority sprint cannot be deleted');
+      return;
+    }
+
+    const operationId = `delete-sprint-${sprintId}`;
+    setOperationLoading(prev => ({ ...prev, [operationId]: true }));
+
+    try {
+      const { error } = await supabase
+        .from('sprints')
+        .delete()
+        .eq('id', sprintId);
+
+      if (error) throw error;
+
+      // Update local state
+      setSprints(prev => prev.filter(sprint => sprint.id !== sprintId));
+    } catch (err) {
+      console.error('Error deleting sprint:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete sprint');
+    } finally {
+      setOperationLoading(prev => {
+        const { [operationId]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [sprints]);
+
   // Move sprint position
   const moveSprint = useCallback(async (sprintId: string, newPosition: number) => {
     if (!user) return;
     
-    // Prevent moving backlog sprint or priority sprint
+    // CRITICAL: Prevent moving backlog sprint or priority sprint
     const sprint = sprints.find(s => s.id === sprintId);
     if (!sprint || sprint.isBacklog || sprintId === 'priority') {
       console.warn('Cannot move system sprints (Priority or Backlog)');
@@ -497,7 +575,7 @@ export const useSupabaseStories = () => {
       // Insert the moved sprint at the new position
       otherSprints.splice(newPosition, 0, movedSprint);
 
-      // Update positions for all user sprints (starting from position 1, after priority)
+      // CRITICAL: Update positions for all user sprints (starting from position 1, after priority)
       const updatePromises = otherSprints.map((sprint, index) => 
         supabase
           .from('sprints')
@@ -516,6 +594,27 @@ export const useSupabaseStories = () => {
         throw new Error(`Failed to update ${errors.length} sprints: ${errors[0].error?.message}`);
       }
 
+      // CRITICAL: Ensure backlog sprint is repositioned to be last after user sprint reordering
+      const { data: maxPosition } = await supabase
+        .from('sprints')
+        .select('position')
+        .eq('user_id', user.id)
+        .is('archived_at', null)
+        .eq('is_backlog', false)
+        .order('position', { ascending: false })
+        .limit(1);
+
+      if (maxPosition && maxPosition.length > 0) {
+        await supabase
+          .from('sprints')
+          .update({
+            position: maxPosition[0].position + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .eq('is_backlog', true);
+      }
+
       // Reload data to get correct ordering
       await loadData();
     } catch (err) {
@@ -528,40 +627,6 @@ export const useSupabaseStories = () => {
       });
     }
   }, [user, sprints, loadData]);
-
-  // Delete sprint
-  const deleteSprint = useCallback(async (sprintId: string) => {
-    // Prevent deletion of backlog sprint
-    const sprint = sprints.find(s => s.id === sprintId);
-    if (sprint?.isBacklog) {
-      console.warn('Cannot delete backlog sprint');
-      setError('Backlog sprint cannot be deleted');
-      return;
-    }
-
-    const operationId = `delete-sprint-${sprintId}`;
-    setOperationLoading(prev => ({ ...prev, [operationId]: true }));
-
-    try {
-      const { error } = await supabase
-        .from('sprints')
-        .delete()
-        .eq('id', sprintId);
-
-      if (error) throw error;
-
-      // Update local state
-      setSprints(prev => prev.filter(sprint => sprint.id !== sprintId));
-    } catch (err) {
-      console.error('Error deleting sprint:', err);
-      setError(err instanceof Error ? err.message : 'Failed to delete sprint');
-    } finally {
-      setOperationLoading(prev => {
-        const { [operationId]: _, ...rest } = prev;
-        return rest;
-      });
-    }
-  }, [sprints]);
 
   // Toggle story completion
   const toggleStory = useCallback(async (storyId: string) => {

@@ -48,7 +48,8 @@ export const SPRINT_LAYOUT_RULES = {
     IS_DELETABLE: false,  // NEVER deletable
     POSITION: 'last', // Always rendered last
     STORY_LAYOUT: '2-column', // ALWAYS two columns of stories
-    COLOR_SCHEME: 'priority', // Same color as Priority Sprint
+    COLOR_SCHEME: 'priority', // CRITICAL: Same color as Priority Sprint
+    BADGE_TEXT: 'FUTURE ENHANCEMENTS', // Badge text for backlog sprint
   },
 } as const;
 
@@ -109,7 +110,7 @@ export const validateSprintLayout = (sprint: { id: string; isBacklog?: boolean }
   if (sprint.isBacklog) {
     return {
       width: rules.BACKLOG_SPRINT.WIDTH,
-      isDraggable: rules.BACKLOG_SPRINT.IS_DRAGGABLE,
+      isDraggable: false,  // CRITICAL: Backlog is NEVER draggable
       isDeletable: rules.BACKLOG_SPRINT.IS_DELETABLE,
     };
   }
