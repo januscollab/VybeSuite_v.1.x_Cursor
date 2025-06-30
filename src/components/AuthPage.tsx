@@ -78,6 +78,7 @@ export const AuthPage: React.FC = () => {
       }
     } else if (mode === 'signup') {
       const { error } = await signUp(email, password);
+      console.log('Supabase signUp error:', error);
       if (error) {
         // Provide user-friendly error messages for common scenarios
         if (error.message.includes('User already registered') || error.message.includes('user_already_exists')) {
