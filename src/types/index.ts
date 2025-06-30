@@ -114,3 +114,16 @@ export interface UserProfile {
   email: string;
   settings: UserSettings;
 }
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  role: string;
+  created_at: string;
+  last_sign_in_at: string | null;
+  email_confirmed_at: string | null;
+  user_metadata: {
+    first_name?: string;
+    last_name?: string;
+  };
+}

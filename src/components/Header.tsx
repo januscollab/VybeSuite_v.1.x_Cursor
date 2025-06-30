@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { Shield } from 'lucide-react';
 import { UserMenu } from './UserMenu';
+import { useAdminAuth } from '../hooks/useAdminAuth';
 
 interface HeaderProps {
   activeView: 'active' | 'archive';
@@ -16,6 +18,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
   onOpenProfileSettings
 }) => {
+  const { isAdmin } = useAdminAuth();
+
   return (
     <header className="bg-bg-primary border-b border-border-default sticky top-0 z-50 shadow-devsuite">
       <div className="max-w-none mx-auto px-5 py-4">
@@ -30,6 +34,17 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Navigation */}
           <nav className="flex items-center gap-4">
+            {/* Admin Menu - Only visible to super admins */}
+            {isAdmin && (
+              <a
+                href="/admin"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary transition-all"
+              >
+                <Shield className="w-4 h-4" />
+                Admin
+              </a>
+            )}
+
             {/* Toggle Switch */}
             <div className="flex items-center gap-3 bg-bg-muted rounded-lg p-1">
               <button

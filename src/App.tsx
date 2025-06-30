@@ -10,6 +10,8 @@ import { SettingsModal } from './components/SettingsModal';
 import { OpenSprintModal } from './components/OpenSprintModal';
 import { AddSprintModal } from './components/AddSprintModal';
 import { ProfileSettingsModal } from './components/ProfileSettingsModal';
+import { AdminLayout } from './components/admin/AdminLayout';
+import { AdminRoute } from './components/AdminRoute';
 import { PulsingDotsLoader } from './components/LoadingSpinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useSupabaseStories } from './hooks/useSupabaseStories';
@@ -54,6 +56,7 @@ function AppContent() {
     story: Story | null;
   }>({ isOpen: false, story: null });
   const [showDashboard, setShowDashboard] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   // Always call hooks at the top level - never conditionally
   const { 
@@ -193,6 +196,24 @@ function AppContent() {
           </button>
         </div>
       </div>
+    );
+  }
+
+  // Admin view
+  if (showAdmin) {
+    return (
+      <AdminRoute>
+        <AdminLayout onBack={() => setShowAdmin(false)} />
+      </AdminRoute>
+    );
+  }
+
+  // Check for admin route
+  if (window.location.pathname === '/admin') {
+    return (
+      <AdminRoute>
+        <AdminLayout />
+      </AdminRoute>
     );
   }
 
