@@ -1,6 +1,9 @@
+// UserManagement Component with Service Role Key Support
+// Replace src/components/admin/UserManagement.tsx with this code
+
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, MoreVertical, Trash2, Edit, UserX, UserCheck, Mail } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { supabase, getAdminClient, isAdminEnabled } from '../../lib/supabase';
 import { PulsingDotsLoader } from '../LoadingSpinner';
 import { UserDeleteModal } from './UserDeleteModal';
 import { UserFormModal } from './UserFormModal';
@@ -27,26 +30,55 @@ export const UserManagement: React.FC = () => {
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const [adminWarning, setAdminWarning] = useState<string | null>(null);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
+      setAdminWarning(null);
 
-      // Get all users from auth.users
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-      if (authError) throw authError;
+      if (!isAdminEnabled()) {
+        setAdminWarning('Admin operations require service role key configuration');
+        // Fallback to current user only
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser) {
+          setUsers([{
+            id: currentUser.id,
+            email: currentUser.email || '',
+            role: 'super_admin',
+            created_at: currentUser.created_at,
+            last_sign_in_at: currentUser.last_sign_in_at,
+            email_confirmed_at: currentUser.email_confirmed_at,
+            user_metadata: currentUser.user_metadata || {}
+          }]);
+        }
+        return;
+      }
+
+      // Use admin client to get all users
+      const adminClient = getAdminClient();
+      const { data: authUsers, error: authError } = await adminClient.auth.admin.listUsers();
+      
+      if (authError) {
+        console.error('Error fetching users with admin API:', authError);
+        throw authError;
+      }
 
       // Get user roles
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
-      if (rolesError) throw rolesError;
+      
+      if (rolesError) {
+        console.error('Error fetching user roles:', rolesError);
+        // Continue without roles if needed
+      }
 
       // Combine user data with roles
       const usersWithRoles = authUsers.users.map(user => ({
         id: user.id,
         email: user.email || '',
-        role: userRoles.find(r => r.user_id === user.id)?.role || 'user',
+        role: userRoles?.find(r => r.user_id === user.id)?.role || 'user',
         created_at: user.created_at,
         last_sign_in_at: user.last_sign_in_at,
         email_confirmed_at: user.email_confirmed_at,
@@ -54,8 +86,25 @@ export const UserManagement: React.FC = () => {
       }));
 
       setUsers(usersWithRoles);
+      console.log(`✅ Loaded ${usersWithRoles.length} users successfully`);
+
     } catch (err) {
       console.error('Error loading users:', err);
+      setAdminWarning('Failed to load users. Check console for details.');
+      
+      // Fallback: Show current user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        setUsers([{
+          id: currentUser.id,
+          email: currentUser.email || '',
+          role: 'super_admin',
+          created_at: currentUser.created_at,
+          last_sign_in_at: currentUser.last_sign_in_at,
+          email_confirmed_at: currentUser.email_confirmed_at,
+          user_metadata: currentUser.user_metadata || {}
+        }]);
+      }
     } finally {
       setLoading(false);
     }
@@ -81,6 +130,10 @@ export const UserManagement: React.FC = () => {
   };
 
   const handleCreateUser = () => {
+    if (!isAdminEnabled()) {
+      alert('User creation requires service role key configuration');
+      return;
+    }
     setEditingUser(null);
     setShowUserModal(true);
   };
@@ -97,34 +150,28 @@ export const UserManagement: React.FC = () => {
     loadUsers();
   };
 
-  const handleToggleUserStatus = async (user: User) => {
-    const actionId = `toggle-${user.id}`;
-    setActionLoading(prev => ({ ...prev, [actionId]: true }));
-
-    try {
-      // This would require admin API access to suspend/activate users
-      // For now, we'll show a placeholder
-      console.log('Toggle user status:', user.id);
-      // await supabase.auth.admin.updateUserById(user.id, { banned: !user.banned });
-      // loadUsers();
-    } catch (err) {
-      console.error('Error toggling user status:', err);
-    } finally {
-      setActionLoading(prev => ({ ...prev, [actionId]: false }));
-    }
-  };
-
   const handleResetPassword = async (user: User) => {
     const actionId = `reset-${user.id}`;
     setActionLoading(prev => ({ ...prev, [actionId]: true }));
 
     try {
-      const { error } = await supabase.auth.admin.generateLink({
-        type: 'recovery',
-        email: user.email
-      });
+      if (isAdminEnabled()) {
+        // Use admin API for password reset
+        const adminClient = getAdminClient();
+        const { error } = await adminClient.auth.admin.generateLink({
+          type: 'recovery',
+          email: user.email
+        });
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Fallback to regular password reset
+        const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+          redirectTo: `${window.location.origin}/auth/reset-password`
+        });
+
+        if (error) throw error;
+      }
 
       alert(`Password reset email sent to ${user.email}`);
     } catch (err) {
@@ -139,7 +186,7 @@ export const UserManagement: React.FC = () => {
     const firstName = user.user_metadata.first_name || '';
     const lastName = user.user_metadata.last_name || '';
     const fullName = `${firstName} ${lastName}`.trim();
-    return fullName || user.email;
+    return fullName || user.email.split('@')[0];
   };
 
   const getInitials = (user: User) => {
@@ -175,6 +222,20 @@ export const UserManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Admin Warning */}
+      {adminWarning && (
+        <div className="bg-warning-light border border-warning-dark rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-warning-dark rounded-full"></div>
+            <span className="text-warning-dark font-medium">Admin Notice</span>
+          </div>
+          <p className="text-warning-dark mt-1">{adminWarning}</p>
+          <p className="text-sm text-warning-dark mt-2">
+            To enable full admin functionality, add VITE_SUPABASE_SERVICE_ROLE_KEY to your .env file.
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -183,7 +244,8 @@ export const UserManagement: React.FC = () => {
         </div>
         <button
           onClick={handleCreateUser}
-          className="flex items-center gap-2 px-4 py-2 bg-devsuite-primary text-text-inverse rounded-lg hover:bg-devsuite-primary-hover transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-devsuite-primary text-text-inverse rounded-lg hover:bg-devsuite-primary-hover transition-colors disabled:opacity-50"
+          disabled={!isAdminEnabled()}
         >
           <Plus className="w-4 h-4" />
           Create User
@@ -250,7 +312,7 @@ export const UserManagement: React.FC = () => {
                     {new Date(user.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-sm text-text-secondary">
-                    {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never'}
+                    {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Recently'}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
@@ -274,6 +336,7 @@ export const UserManagement: React.FC = () => {
                           onClick={() => handleDeleteUser(user)}
                           className="p-2 text-text-quaternary hover:text-error hover:bg-error/10 rounded-md transition-all"
                           title="Delete user"
+                          disabled={!isAdminEnabled()}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -290,14 +353,14 @@ export const UserManagement: React.FC = () => {
           <div className="text-center py-12">
             <div className="text-text-quaternary mb-2">No users found</div>
             <div className="text-sm text-text-tertiary">
-              {searchQuery ? 'Try adjusting your search criteria' : 'No users have been created yet'}
+              {searchQuery ? `No users match "${searchQuery}"` : 'No users have been loaded'}
             </div>
           </div>
         )}
       </div>
 
-      {/* User Delete Modal */}
-      {selectedUser && (
+      {/* Modals */}
+      {showDeleteModal && selectedUser && (
         <UserDeleteModal
           isOpen={showDeleteModal}
           user={selectedUser}
@@ -306,13 +369,14 @@ export const UserManagement: React.FC = () => {
         />
       )}
 
-      {/* User Form Modal */}
-      <UserFormModal
-        isOpen={showUserModal}
-        user={editingUser}
-        onClose={() => setShowUserModal(false)}
-        onSaved={handleUserSaved}
-      />
+      {showUserModal && (
+        <UserFormModal
+          isOpen={showUserModal}
+          user={editingUser}
+          onClose={() => setShowUserModal(false)}
+          onSaved={handleUserSaved}
+        />
+      )}
     </div>
   );
 };
