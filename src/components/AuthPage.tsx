@@ -116,17 +116,6 @@ export const AuthPage: React.FC = () => {
     resetForm();
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-bg-canvas flex items-center justify-center">
-        <div className="text-center">
-          <PulsingDotsLoader size="lg" className="mx-auto mb-4" />
-          <p className="text-text-secondary">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-bg-canvas flex items-center justify-center p-6">
       <div className="bg-bg-primary rounded-xl shadow-devsuite-modal border border-border-default w-full max-w-md">
