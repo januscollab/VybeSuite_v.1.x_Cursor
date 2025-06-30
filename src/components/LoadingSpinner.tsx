@@ -23,7 +23,7 @@ export const PulsingDotsLoader: React.FC<PulsingDotsLoaderProps> = ({
       <div className="dot dot-2"></div>
       <div className="dot dot-3"></div>
       
-      <style jsx>{`
+      <style>{`
         .pulsing-dots-loader {
           display: flex;
           align-items: center;

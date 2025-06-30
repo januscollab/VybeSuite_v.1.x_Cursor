@@ -263,6 +263,7 @@ export const AuthPage: React.FC = () => {
                 <input
                   id="email"
                   type="email"
+                  autocomplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
@@ -283,6 +284,7 @@ export const AuthPage: React.FC = () => {
                   <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
+                    autocomplete={mode === 'signup' ? 'new-password' : 'current-password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
@@ -316,6 +318,7 @@ export const AuthPage: React.FC = () => {
                   <input
                     id="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
+                    autocomplete="new-password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Confirm your password"
