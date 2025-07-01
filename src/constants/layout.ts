@@ -41,15 +41,21 @@ export const SPRINT_LAYOUT_RULES = {
   
   /**
    * Backlog Sprint Rules (EXCEPTION)
+   * CRITICAL: Pre-created for ALL users on registration
+   * IMMUTABLE: These rules define the backlog sprint constraints
    */
   BACKLOG_SPRINT: {
     WIDTH: '100%', // ONLY sprint that can be full width
     IS_DRAGGABLE: false,
     IS_DELETABLE: false,  // NEVER deletable
+    HAS_CLOSE_BUTTON: false, // RULE: NO Close button functionality  
+    HAS_OPEN_BUTTON: false,  // RULE: NO Open button functionality
     POSITION: 'last', // Always rendered last
     STORY_LAYOUT: '2-column', // ALWAYS two columns of stories
     COLOR_SCHEME: 'priority', // CRITICAL: Same color as Priority Sprint
     BADGE_TEXT: 'FUTURE ENHANCEMENTS', // Badge text for backlog sprint
+    DEFAULT_NAME: 'Backlog', // Default name (changed from "Backlog")
+    IS_PRE_CREATED: true, // Pre-created for all users on registration
   },
 } as const;
 

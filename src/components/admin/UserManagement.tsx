@@ -242,30 +242,35 @@ export const UserManagement: React.FC = () => {
           <h2 className="text-2xl font-bold text-text-primary">User Management</h2>
           <p className="text-text-tertiary">Manage platform users and permissions</p>
         </div>
-        <button
-          onClick={handleCreateUser}
-          className="flex items-center gap-2 px-4 py-2 bg-devsuite-primary text-text-inverse rounded-lg hover:bg-devsuite-primary-hover transition-colors disabled:opacity-50"
-          disabled={!isAdminEnabled()}
-        >
-          <Plus className="w-4 h-4" />
-          Create User
-        </button>
       </div>
 
-      {/* Search and Filters */}
-      <div className="bg-bg-primary rounded-xl p-6">
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-quaternary" />
+      {/* Search Bar - Moved up and made more prominent */}
+      <div className="bg-bg-primary rounded-xl p-6 border border-border-default">
+        <div className="flex items-center justify-between gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-quaternary" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search users by name or email..."
-              className="w-full pl-10 pr-4 py-3 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+              className="w-full pl-11 pr-4 py-3 border border-border-default rounded-lg bg-bg-secondary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all text-sm"
             />
           </div>
+          <button
+            onClick={handleCreateUser}
+            className="flex items-center gap-2 px-6 py-3 bg-devsuite-primary text-text-inverse rounded-lg hover:bg-devsuite-primary-hover transition-colors disabled:opacity-50 font-medium"
+            disabled={!isAdminEnabled()}
+          >
+            <Plus className="w-4 h-4" />
+            Add User
+          </button>
         </div>
+        {searchQuery && (
+          <div className="mt-3 text-sm text-text-secondary">
+            {filteredUsers.length === 1 ? '1 user' : `${filteredUsers.length} users`} found for "{searchQuery}"
+          </div>
+        )}
       </div>
 
       {/* Users Table */}

@@ -7,6 +7,9 @@ import { useUserSettings } from './useUserSettings';
 import { useArchive } from './useArchive';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
+// VERBOSE_LOGGING: Set to true only when debugging specific issues
+const VERBOSE_LOGGING = false;
+
 // Cache management constants
 const CACHE_KEY = 'sprint-board-cache';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -76,6 +79,85 @@ export const useSupabaseStories = () => {
     }
   }, [user]);
 
+  // CRITICAL: Ensure Priority Sprint exists for ALL users
+  const ensurePrioritySprintExists = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      // Check if priority sprint exists
+      const { data: existingPriority, error: checkError } = await supabase
+        .from('sprints')
+        .select('id, archived_at')
+        .eq('user_id', user.id)
+        .eq('id', 'priority')
+        .limit(1);
+
+      if (checkError && (checkError as any).code !== 'PGRST116') { // PGRST116 = no rows found
+        throw checkError;
+      }
+
+      const existingPrioritySprint = existingPriority?.[0];
+
+      if (existingPrioritySprint) {
+        // Unarchive if needed
+        if (existingPrioritySprint.archived_at) {
+          const { error: unarchiveError } = await supabase
+            .from('sprints')
+            .update({ 
+              archived_at: null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', 'priority')
+            .eq('user_id', user.id);
+
+          if (unarchiveError) throw unarchiveError;
+          console.log('✅ Priority sprint unarchived');
+        }
+        return;
+      }
+
+      // Create new priority sprint
+      await createPrioritySprintForUser();
+      
+    } catch (err) {
+      console.error('❌ Error ensuring priority sprint exists:', err);
+      // Don't throw - this shouldn't break the app
+    }
+  }, [user]);
+
+  // CRITICAL: Create Priority Sprint with proper configuration (NEVER deletable)
+  const createPrioritySprintForUser = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('sprints')
+        .insert({
+          id: 'priority', // FIXED ID for Priority Sprint
+          title: 'Priority Sprint',
+          description: 'High-priority tasks and urgent items',
+          icon: '🔥',
+          is_backlog: false,
+          is_draggable: false, // CRITICAL: Priority Sprint is NEVER draggable
+          user_id: user.id,
+          position: 0 // CRITICAL: Priority Sprint is always first
+        });
+
+      if (error) {
+        if ((error as any).code === '23505') {
+          console.log('⚠️ Priority sprint already exists (race condition)');
+          return;
+        }
+        throw error;
+      }
+
+      console.log('✅ Priority sprint created successfully for new user');
+    } catch (err) {
+      console.error('❌ Error creating priority sprint:', err);
+      throw err;
+    }
+  }, [user]);
+
   // FIXED: Simplified backlog position fixing
   const fixBacklogPosition = useCallback(async () => {
     if (!user) return;
@@ -105,7 +187,9 @@ export const useSupabaseStories = () => {
         .eq('is_backlog', true);
 
       if (error) throw error;
-      console.log('✅ Backlog position fixed:', backlogPosition);
+              if (VERBOSE_LOGGING) {
+          console.log('✅ Backlog position fixed:', backlogPosition);
+        }
       
     } catch (err) {
       console.error('❌ Error fixing backlog position:', err);
@@ -129,8 +213,8 @@ export const useSupabaseStories = () => {
     const { error } = await supabase
       .from('sprints')
       .insert({
-        id: `backlog-${user.id}-${Date.now()}`, // Ensure uniqueness
-        title: 'Backlog - Future Enhancements',
+        id: `backlog-${user.id}`, // FIXED: Remove timestamp to prevent duplicates
+        title: 'Backlog',
         description: 'Future enhancements and feature ideas',
         icon: '📋',
         is_backlog: true,
@@ -140,7 +224,7 @@ export const useSupabaseStories = () => {
       });
 
     if (error) {
-      if (error.code === '23505') {
+      if ((error as any).code === '23505') {
         console.log('⚠️ Backlog sprint already exists (race condition)');
         return;
       }
@@ -163,7 +247,9 @@ export const useSupabaseStories = () => {
         localStorage.removeItem(CACHE_KEY);
       }
 
-      // Ensure backlog exists first
+      // CRITICAL: Ensure both Priority and Backlog sprints exist for ALL users
+      // Priority sprint must be created first (position 0)
+      await ensurePrioritySprintExists();
       await ensureBacklogSprintExists();
 
       // Fetch sprints with explicit ordering
@@ -229,11 +315,13 @@ export const useSupabaseStories = () => {
       setSprints(sortedSprints);
       setIsInitialized(true);
       
-      console.log('✅ Data loaded successfully:', {
-        sprintsCount: sortedSprints.length,
-        backlogExists: sortedSprints.some(s => s.isBacklog),
-        priorityExists: sortedSprints.some(s => s.id === 'priority')
-      });
+      if (VERBOSE_LOGGING) {
+        console.log('✅ Data loaded successfully:', {
+          sprintsCount: sortedSprints.length,
+          backlogExists: sortedSprints.some(s => s.isBacklog),
+          priorityExists: sortedSprints.some(s => s.id === 'priority')
+        });
+      }
       
     } catch (err) {
       console.error('❌ Error loading data:', err);
@@ -245,7 +333,7 @@ export const useSupabaseStories = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, ensureBacklogSprintExists]);
+  }, [user, ensurePrioritySprintExists, ensureBacklogSprintExists]);
 
   // FIXED: Force refresh function for troubleshooting
   const forceRefresh = useCallback(() => {
@@ -305,7 +393,9 @@ export const useSupabaseStories = () => {
 
       if (error) throw error;
       
-      console.log('✅ Story added successfully:', storyNumber);
+      if (VERBOSE_LOGGING) {
+        console.log('✅ Story added successfully:', storyNumber);
+      }
       await loadData(true); // Force refresh after adding
       
     } catch (err) {

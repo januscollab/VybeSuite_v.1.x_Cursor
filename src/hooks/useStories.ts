@@ -130,7 +130,7 @@ const initialSprints: Sprint[] = [
   },
   {
     id: 'backlog',
-    title: 'Backlog - Future Enhancements',
+            title: 'Backlog',
     icon: '📋',
     isBacklog: true,
     stories: [

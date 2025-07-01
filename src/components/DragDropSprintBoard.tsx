@@ -95,7 +95,6 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <main className="p-6 max-w-none mx-auto">
-        <h1 className="text-3xl font-bold text-text-primary mb-8">Sprint Board</h1>
         
         {/* 
           ALL NON-BACKLOG SPRINTS - UNIFIED 2-COLUMN GRID
@@ -122,7 +121,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
                     const isDraggableSprint = sprint.id !== 'priority' && sprint.isDraggable && !sprint.isBacklog;
                     
                     return isDraggableSprint ? (
-                      <Draggable key={sprint.id} draggableId={sprint.id} index={index - 1} type="sprint">
+                      <Draggable key={sprint.id} draggableId={sprint.id} index={index - 1}>
                       {(provided, snapshot) => (
                         <div
                           ref={provided.innerRef}
@@ -143,7 +142,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
                             onAddStory={() => onAddStory(sprint.id)}
                             onOpenSprint={() => onOpenSprint(sprint.id)}
                             onCloseSprint={(type) => onCloseSprint(sprint.id, type)}
-                            onDeleteSprint={() => onDeleteSprint(sprint.id)}
+                            onDeleteSprint={sprint.id === 'priority' ? undefined : () => onDeleteSprint(sprint.id)}
                             onToggleStory={onToggleStory}
                             onEditStory={onEditStory}
                           />
@@ -151,7 +150,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
                       )}
                       </Draggable>
                     ) : (
-                      // Priority Sprint - not draggable
+                      // Priority Sprint - not draggable and not deletable
                       <DroppableSprintCard
                         key={sprint.id}
                         id={sprint.id}
@@ -164,7 +163,7 @@ export const DragDropSprintBoard: React.FC<DragDropSprintBoardProps> = ({
                         onAddStory={() => onAddStory(sprint.id)}
                         onOpenSprint={() => onOpenSprint(sprint.id)}
                         onCloseSprint={(type) => onCloseSprint(sprint.id, type)}
-                        onDeleteSprint={() => onDeleteSprint(sprint.id)}
+                        onDeleteSprint={sprint.id === 'priority' ? undefined : () => onDeleteSprint(sprint.id)}
                         onToggleStory={onToggleStory}
                         onEditStory={onEditStory}
                         onCloseBoard={sprint.id === 'priority' ? onCloseBoard : undefined}

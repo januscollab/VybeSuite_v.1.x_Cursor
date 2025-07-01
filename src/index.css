@@ -8,3 +8,141 @@
   --text-inverse: #FFFFFF;
   --text-secondary: #3E3E3E;
 }
+
+/* ===== GLASSMORPHISM CONTEXT MENU ===== */
+
+/* Glassmorphism Context Menu Container */
+.glassmorphism-context-menu {
+  position: absolute;
+  top: 16px;
+  right: -110px; /* Hidden by default */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  opacity: 0;
+  pointer-events: none; /* CRITICAL: Prevents click interference */
+  z-index: 10;
+}
+
+/* Show on Sprint Card Hover */
+.sprint-card:hover .glassmorphism-context-menu {
+  right: 16px;
+  opacity: 1;
+  pointer-events: all; /* Enable interactions when visible */
+}
+
+/* Base Glass Button Styling */
+.btn-glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 400; /* Non-bold */
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 90px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Hover Effects - Orange Text */
+.btn-glass:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  color: var(--devsuite-primary); /* Orange text on hover */
+}
+
+/* Disabled State */
+.btn-glass:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-glass:disabled:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: none;
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+
+/* Shimmer Animation */
+.btn-glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  transition: left 0.5s;
+  z-index: 1;
+}
+
+.btn-glass:hover::before {
+  left: 100%;
+}
+
+.btn-glass > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Button Variants (All Same Base Style Now) */
+.btn-glass-primary,
+.btn-glass-secondary,
+.btn-glass-neutral {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-secondary);
+}
+
+.btn-glass-primary:hover,
+.btn-glass-secondary:hover,
+.btn-glass-neutral:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--devsuite-primary);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .glassmorphism-context-menu {
+    right: -100px;
+  }
+  
+  .sprint-card:hover .glassmorphism-context-menu {
+    right: 12px;
+  }
+  
+  .btn-glass {
+    min-width: 80px;
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Fallback for browsers without backdrop-filter */
+@supports not (backdrop-filter: blur(20px)) {
+  .btn-glass {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+  
+  .btn-glass:hover {
+    background: rgba(255, 255, 255, 0.95);
+  }
+}

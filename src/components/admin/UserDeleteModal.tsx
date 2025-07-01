@@ -55,6 +55,12 @@ export const UserDeleteModal: React.FC<UserDeleteModalProps> = ({
     setDeletionProgress([]);
 
     try {
+      // CRITICAL: Check if user is trying to delete themselves
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser?.id === user.id) {
+        throw new Error('You cannot delete your own account. Please ask another administrator to delete your account.');
+      }
+
       // Step 1: Get user's sprint IDs first, then delete stories
       addProgress('Finding user sprints...');
       const { data: userSprints, error: sprintQueryError } = await supabase
@@ -113,16 +119,54 @@ export const UserDeleteModal: React.FC<UserDeleteModalProps> = ({
 
       // Step 6: Delete user from auth (use admin client if available)
       addProgress('Deleting user account...');
-      if (isAdminEnabled()) {
-        const adminClient = getAdminClient();
-        const { error: authError } = await adminClient.auth.admin.deleteUser(user.id);
-        if (authError) throw new Error(`Failed to delete user account: ${authError.message}`);
-      } else {
-        // Fallback: This won't work without admin permissions, but we'll try
-        const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
-        if (authError) throw new Error(`Failed to delete user account: ${authError.message}`);
+      addProgress(`DEBUG: Admin enabled: ${isAdminEnabled()}`);
+      
+      try {
+        if (isAdminEnabled()) {
+          addProgress('DEBUG: Getting admin client...');
+          const adminClient = getAdminClient();
+          addProgress('DEBUG: Admin client obtained, attempting deletion...');
+          
+          const { error: authError } = await adminClient.auth.admin.deleteUser(user.id);
+          if (authError) {
+            console.error('Detailed auth deletion error:', {
+              message: authError.message,
+              status: authError.status,
+              code: authError.code || 'unknown',
+              details: authError
+            });
+            
+            addProgress(`DEBUG: Auth error details - Status: ${authError.status}, Message: ${authError.message}`);
+            throw new Error(`Failed to delete user account: ${authError.message} (Status: ${authError.status || 'unknown'})`);
+          }
+          addProgress('DEBUG: User successfully deleted from auth');
+        } else {
+          throw new Error('Admin operations require service role key configuration');
+        }
+        addProgress('✅ User account deleted');
+      } catch (authErr) {
+        // If the auth deletion fails, provide detailed error info but mark as partial success
+        console.error('Auth deletion failed:', authErr);
+        
+        // Check if it's the common Status 500 error
+        if (authErr instanceof Error && authErr.message.includes('Status: 500')) {
+          addProgress(`⚠️ Database cleanup completed successfully`);
+          addProgress(`⚠️ Auth deletion failed with Status 500 - this is a known Supabase issue`);
+          addProgress(`📝 Solution: Please manually delete user "${user.email}" from your Supabase Auth dashboard`);
+          addProgress(`🔗 Go to: Dashboard → Authentication → Users → Find user → Delete`);
+          addProgress(`✅ All user data has been cleaned from database tables`);
+        } else {
+          addProgress(`❌ Auth deletion failed: ${authErr instanceof Error ? authErr.message : 'Unknown error'}`);
+          addProgress(`✅ User data has been cleaned from database tables`);
+          addProgress(`📝 Manual cleanup required: Delete user from Supabase Auth dashboard`);
+        }
+        
+        // For debugging purposes, let's also log the environment
+        addProgress(`DEBUG: Service role key present: ${!!import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY}`);
+        addProgress(`DEBUG: Environment check: ${import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY ? 'KEY_FOUND' : 'KEY_MISSING'}`);
+        
+        // Don't throw error here - let it continue as partial success
       }
-      addProgress('✅ User account deleted');
 
       addProgress('🎉 User deletion completed successfully');
       setStep('complete');

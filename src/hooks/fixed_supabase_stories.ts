@@ -128,7 +128,7 @@ export const useSupabaseStories = () => {
       .from('sprints')
       .insert({
         id: `backlog-${user.id}-${Date.now()}`, // Ensure uniqueness
-        title: 'Backlog - Future Enhancements',
+        title: 'Backlog',
         description: 'Future enhancements and feature ideas',
         icon: '📋',
         is_backlog: true,

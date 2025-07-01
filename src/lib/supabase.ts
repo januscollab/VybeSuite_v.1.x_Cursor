@@ -1,55 +1,68 @@
-// Enhanced Supabase Configuration with Admin API Support
-// Replace src/lib/supabase.ts with this code
-
+// Enhanced Supabase Configuration with Development Mode Support
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
-// Validation for required keys
-if (!supabaseUrl || !supabaseAnonKey || 
-    supabaseUrl.includes('your-project-ref') || 
-    supabaseAnonKey.includes('your-anon-key') ||
-    supabaseUrl === 'your_supabase_project_url' ||
-    supabaseAnonKey === 'your_supabase_anon_key' ||
-    supabaseUrl === 'https://your-project-ref.supabase.co' ||
-    supabaseAnonKey === 'your-anon-key-here') {
-  
-  console.warn('⚠️ Supabase configuration may be incomplete');
-  console.log('Current URL:', supabaseUrl);
-  console.log('Anon Key status:', supabaseAnonKey ? '[SET]' : '[MISSING]');
-  console.log('Service Role Key status:', supabaseServiceRoleKey ? '[SET]' : '[MISSING]');
-  
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(`
-      ❌ Supabase Configuration Error
-      
-      Missing Supabase environment variables. Please:
-      
-      1. Go to your Supabase project dashboard: https://supabase.com/dashboard
-      2. Navigate to Project Settings > API
-      3. Copy your Project URL and keys
-      4. Update the .env file in your project root with:
-         VITE_SUPABASE_URL=your-actual-project-url
-         VITE_SUPABASE_ANON_KEY=your-actual-anon-key
-         VITE_SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-      5. Restart your development server
-      
-      Current values:
-      - VITE_SUPABASE_URL: ${supabaseUrl || 'undefined'}
-      - VITE_SUPABASE_ANON_KEY: ${supabaseAnonKey ? '[SET]' : 'undefined'}
-      - VITE_SUPABASE_SERVICE_ROLE_KEY: ${supabaseServiceRoleKey ? '[SET]' : 'undefined'}
-    `);
-  }
+// Development mode detection
+const isDevelopmentMode = !supabaseUrl || !supabaseAnonKey || 
+  supabaseUrl.includes('your-project-ref') || 
+  supabaseAnonKey.includes('your-anon-key') ||
+  supabaseUrl === 'your_supabase_project_url' ||
+  supabaseAnonKey === 'your_supabase_anon_key' ||
+  supabaseUrl === 'https://your-project-ref.supabase.co' ||
+  supabaseAnonKey === 'your-anon-key-here' ||
+  supabaseUrl === 'https://placeholder.supabase.co' ||
+  supabaseAnonKey === 'placeholder-anon-key';
+
+if (isDevelopmentMode) {
+  console.log('🔧 Running in Development Mode (Supabase not configured)');
+  console.log('📋 To enable full features, set up Supabase credentials in .env file');
 }
 
-// Regular client for normal operations (uses anon key)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Mock Supabase client for development
+const createMockSupabaseClient = () => {
+  const mockError = new Error('Supabase not configured - running in development mode');
+  
+  return {
+    from: (table: string) => ({
+      select: () => Promise.resolve({ data: [], error: null }),
+      insert: () => Promise.resolve({ data: null, error: mockError }),
+      update: () => Promise.resolve({ data: null, error: mockError }),
+      delete: () => Promise.resolve({ data: null, error: mockError }),
+      eq: () => Promise.resolve({ data: [], error: null }),
+      order: () => Promise.resolve({ data: [], error: null }),
+      limit: () => Promise.resolve({ data: [], error: null }),
+      is: () => Promise.resolve({ data: [], error: null })
+    }),
+    auth: {
+      signUp: () => Promise.resolve({ data: null, error: mockError }),
+      signIn: () => Promise.resolve({ data: null, error: mockError }),
+      signOut: () => Promise.resolve({ error: null }),
+      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      onAuthStateChange: (callback: any) => {
+        // Immediately call the callback with no session in development mode
+        setTimeout(() => callback('SIGNED_OUT', null), 0);
+        return { data: { subscription: { unsubscribe: () => {} } } };
+      }
+    },
+    channel: () => ({
+      on: () => ({ subscribe: () => {} }),
+      unsubscribe: () => {}
+    })
+  };
+};
 
-// Admin client for admin operations (uses service role key)
-export const supabaseAdmin = supabaseServiceRoleKey 
-  ? createClient(supabaseUrl, supabaseServiceRoleKey, {
+// Create appropriate client based on configuration
+export const supabase = isDevelopmentMode 
+  ? createMockSupabaseClient()
+  : createClient(supabaseUrl!, supabaseAnonKey!);
+
+// Admin client for admin operations
+export const supabaseAdmin = (!isDevelopmentMode && supabaseServiceRoleKey) 
+  ? createClient(supabaseUrl!, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
@@ -57,16 +70,10 @@ export const supabaseAdmin = supabaseServiceRoleKey
     })
   : null;
 
-// Utility function to check if admin operations are available
-export const isAdminEnabled = () => {
-  if (!supabaseServiceRoleKey) {
-    console.warn('⚠️ Admin operations not available: VITE_SUPABASE_SERVICE_ROLE_KEY not configured');
-    return false;
-  }
-  return true;
-};
+// Utility functions
+export const isAdminEnabled = () => !isDevelopmentMode && !!supabaseServiceRoleKey;
+export const isDevelopment = () => isDevelopmentMode;
 
-// Helper function to get the appropriate client for admin operations
 export const getAdminClient = () => {
   if (!isAdminEnabled() || !supabaseAdmin) {
     throw new Error('Admin operations require VITE_SUPABASE_SERVICE_ROLE_KEY to be configured');
@@ -74,7 +81,7 @@ export const getAdminClient = () => {
   return supabaseAdmin;
 };
 
-// Database types (existing interface)
+// Database types (keeping existing interface)
 export interface Database {
   public: {
     Tables: {

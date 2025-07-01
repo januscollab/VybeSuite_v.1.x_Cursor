@@ -5,6 +5,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
+// VERBOSE_LOGGING: Set to true only when debugging specific issues  
+const VERBOSE_LOGGING = false;
+
 export interface UserRole {
   id: string;
   userId: string;
@@ -46,7 +49,9 @@ export const useAdminAuth = () => {
       setUserRole(role);
       setIsAdmin(role === 'super_admin' || role === 'admin');
 
+      if (VERBOSE_LOGGING) {
       console.log(`✅ Admin role check completed for ${user.email}: ${role}`);
+    }
       
     } catch (err) {
       console.error('Error checking admin role:', err);

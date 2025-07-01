@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { PromptProvider } from './contexts/PromptContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminRoute } from './components/AdminRoute';
+import { AdminLayout } from './components/admin/AdminLayout';
 import { Header } from './components/Header';
 import { DragDropSprintBoard } from './components/DragDropSprintBoard';
 import { ArchiveView } from './components/ArchiveView';
@@ -10,22 +13,48 @@ import { SettingsModal } from './components/SettingsModal';
 import { OpenSprintModal } from './components/OpenSprintModal';
 import { AddSprintModal } from './components/AddSprintModal';
 import { ProfileSettingsModal } from './components/ProfileSettingsModal';
-import { AdminLayout } from './components/admin/AdminLayout';
-import { AdminRoute } from './components/AdminRoute';
 import { PulsingDotsLoader } from './components/LoadingSpinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useSupabaseStories } from './hooks/useSupabaseStories';
 import { loadAISettings, saveAISettings } from './utils/aiSettings';
 import { AISettings, Sprint, Story } from './types';
-import { AlertTriangle, Database } from 'lucide-react';
+import { AlertTriangle, Database, RefreshCw } from 'lucide-react';
+
+// Reduced console noise during development
+// if (process.env.NODE_ENV === 'development') {
+//   console.log('App component loaded');
+// }
 
 function App() {
+  // Reduced console noise during development
+  // if (process.env.NODE_ENV === 'development') {
+  //   console.log('App rendering');
+  // }
+
   return (
-    <AuthProvider>
-      <PromptProvider>
-        <AppContent />
-      </PromptProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <PromptProvider>
+          <Routes>
+            {/* Main Sprint Board App */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <AppContent />
+              </ProtectedRoute>
+            } />
+            
+            {/* Admin Panel */}
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </PromptProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
@@ -43,352 +72,311 @@ function AppContent() {
     sprintId: '',
     sprintTitle: ''
   });
-  const [addSprintModal, setAddSprintModal] = useState(false);
   const [openSprintModal, setOpenSprintModal] = useState<{
     isOpen: boolean;
-    sprint: Sprint | null;
+    sprintId: string;
   }>({
     isOpen: false,
-    sprint: null
+    sprintId: ''
   });
+  const [addSprintModalOpen, setAddSprintModalOpen] = useState(false);
   const [editStoryModal, setEditStoryModal] = useState<{
     isOpen: boolean;
     story: Story | null;
-  }>({ isOpen: false, story: null });
-  const [showDashboard, setShowDashboard] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
+  }>({
+    isOpen: false,
+    story: null
+  });
 
-  // Always call hooks at the top level - never conditionally
-  const { 
-    sprints, 
-    loading, 
-    error, 
+  // Use the corrected hook with proper error handling
+  const {
+    sprints,
+    loading,
+    error,
+    isInitialized,
     operationLoading,
-    addStory, 
+    addStory,
     updateStory,
     deleteStory,
+    toggleStory,
+    moveStory,
     addSprint,
     deleteSprint,
-    toggleStory, 
-    moveStory, 
     closeSprint,
-    getSprintStats,
-    refreshData,
-    forceRefresh
+    forceRefresh,
+    getSprintStats
   } = useSupabaseStories();
 
-  // CRITICAL FIX: Only show full-screen loader on initial load when no sprints exist
-  const showFullLoader = loading && sprints.length === 0;
-
-  const handleCloseBoard = () => {
-    setShowDashboard(true);
-  };
-
-  const handleAddSprint = () => {
-    setAddSprintModal(true);
-  };
-
-  const handleCloseAddSprintModal = () => {
-    setAddSprintModal(false);
-  };
-
-  const handleSubmitSprint = (title: string, icon: string, description: string, isBacklog: boolean, isDraggable: boolean) => {
-    addSprint(title, icon, description, isBacklog, isDraggable);
-  };
-
-  const handleOpenSettings = () => {
-    setSettingsModalOpen(true);
-  };
-
-  const handleOpenProfileSettings = () => {
-    setProfileSettingsModalOpen(true);
-  };
-
-  const handleSaveAISettings = (newSettings: AISettings) => {
+  // Handle AI settings updates
+  const handleAISettingsChange = useCallback((newSettings: AISettings) => {
     setAISettings(newSettings);
     saveAISettings(newSettings);
-  };
+  }, []);
 
-  const handleAddStory = (sprintId: string) => {
+  // Modal handlers with proper error handling
+  const handleAddStory = useCallback((sprintId: string) => {
     const sprint = sprints.find(s => s.id === sprintId);
-    if (sprint) {
-      setAddStoryModal({
-        isOpen: true,
-        sprintId,
-        sprintTitle: sprint.title
-      });
+    if (!sprint) {
+      console.error('Sprint not found:', sprintId);
+      return;
     }
-  };
+    
+    setAddStoryModal({
+      isOpen: true,
+      sprintId,
+      sprintTitle: sprint.title
+    });
+  }, [sprints]);
 
-  const handleCloseAddStoryModal = () => {
+  const handleEditStory = useCallback((story: Story) => {
+    setEditStoryModal({
+      isOpen: true,
+      story
+    });
+  }, []);
+
+  const handleCloseStoryModal = useCallback(() => {
     setAddStoryModal({
       isOpen: false,
       sprintId: '',
       sprintTitle: ''
     });
-  };
-
-  const handleSubmitStory = (sprintId: string, title: string, description: string, tags: string[]) => {
-    addStory(sprintId, { title, description, tags });
-  };
-
-  const handleEditStory = (story: Story) => {
-    setEditStoryModal({ isOpen: true, story });
-  };
-
-  const handleCloseEditStoryModal = () => {
-    setEditStoryModal({ isOpen: false, story: null });
-  };
-
-  const handleUpdateStory = (storyId: string, title: string, description: string, tags: string[]) => {
-    updateStory(storyId, { title, description, tags });
-  };
-
-  const handleDeleteStory = (storyId: string) => {
-    deleteStory(storyId);
-  };
-
-  const handleOpenSprint = (sprintId: string) => {
-    const sprint = sprints.find(s => s.id === sprintId);
-    if (sprint) {
-      setOpenSprintModal({
-        isOpen: true,
-        sprint
-      });
-    }
-  };
-
-  const handleCloseOpenSprintModal = () => {
-    setOpenSprintModal({
+    setEditStoryModal({
       isOpen: false,
-      sprint: null
+      story: null
     });
-  };
+  }, []);
 
-  const handleCloseSprint = (sprintId: string, type: 'completed' | 'all') => {
-    closeSprint(sprintId, type);
-  };
+  const handleStorySubmit = useCallback(async (storyData: {
+    title: string;
+    description?: string;
+    tags?: string[];
+    priority?: string;
+    risk?: string;
+  }) => {
+    try {
+      if (editStoryModal.story) {
+        // Update existing story
+        await updateStory(editStoryModal.story.id, storyData);
+      } else {
+        // Add new story
+        await addStory(addStoryModal.sprintId, storyData);
+      }
+      handleCloseStoryModal();
+    } catch (err) {
+      console.error('Error submitting story:', err);
+      // Error is handled by the hook
+    }
+  }, [addStoryModal.sprintId, editStoryModal.story, addStory, updateStory, handleCloseStoryModal]);
 
-  const handleDeleteSprint = (sprintId: string) => {
-    deleteSprint(sprintId);
-  };
+  const handleOpenSprint = useCallback((sprintId: string) => {
+    setOpenSprintModal({
+      isOpen: true,
+      sprintId
+    });
+  }, []);
 
-  const handleToggleStory = (storyId: string) => {
-    toggleStory(storyId);
-  };
+  const handleCloseSprint = useCallback(async (sprintId: string, type: 'completed' | 'all') => {
+    try {
+      await closeSprint(sprintId, type);
+    } catch (err) {
+      console.error('Error closing sprint:', err);
+    }
+  }, [closeSprint]);
 
-  const handleMoveStory = (storyId: string, destinationSprintId: string, newPosition: number) => {
-    moveStory(storyId, destinationSprintId, newPosition);
-  };
+  const handleDeleteSprint = useCallback(async (sprintId: string) => {
+    try {
+      await deleteSprint(sprintId);
+    } catch (err) {
+      console.error('Error deleting sprint:', err);
+    }
+  }, [deleteSprint]);
 
-  // Show dashboard view if requested
-  if (showDashboard) {
+  const handleToggleStory = useCallback(async (storyId: string) => {
+    try {
+      await toggleStory(storyId);
+    } catch (err) {
+      console.error('Error toggling story:', err);
+    }
+  }, [toggleStory]);
+
+  const handleMoveStory = useCallback(async (storyId: string, destinationSprintId: string, newPosition: number) => {
+    try {
+      await moveStory(storyId, destinationSprintId, newPosition);
+    } catch (err) {
+      console.error('Error moving story:', err);
+    }
+  }, [moveStory]);
+
+  const handleMoveSprint = useCallback(async (sprintId: string, newPosition: number) => {
+    try {
+      // Note: moveSprint function doesn't exist in the hook, removing this for now
+      console.log('Sprint moving not implemented yet');
+    } catch (err) {
+      console.error('Error moving sprint:', err);
+    }
+  }, []);
+
+  const handleAddSprint = useCallback(async (title: string, icon: string, description: string, isBacklog: boolean, isDraggable: boolean) => {
+    try {
+      await addSprint({ title, icon, description });
+      setAddSprintModalOpen(false);
+    } catch (err) {
+      console.error('Error adding sprint:', err);
+    }
+  }, [addSprint]);
+
+  // Error display component
+  if (error) {
     return (
       <div className="min-h-screen bg-bg-canvas flex items-center justify-center p-6">
-        <div className="bg-bg-primary border border-border-default rounded-xl p-8 max-w-md w-full text-center shadow-devsuite">
-          <h1 className="text-2xl font-bold text-text-primary mb-4">Dashboard</h1>
-          <p className="text-text-secondary mb-6">Welcome to your project dashboard.</p>
-          <button
-            onClick={() => setShowDashboard(false)}
-            className="px-4 py-2 bg-devsuite-primary text-text-inverse rounded-lg hover:bg-devsuite-primary-hover transition-colors"
-          >
-            Back to Sprint Board
-          </button>
+        <div className="bg-bg-primary rounded-xl shadow-devsuite-modal border border-error w-full max-w-md p-8 text-center">
+          <AlertTriangle className="w-12 h-12 text-error mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-text-primary mb-2">Connection Error</h2>
+          <p className="text-text-secondary mb-4">{error}</p>
+          <div className="space-y-2">
+            <button
+              onClick={forceRefresh}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-devsuite-primary text-text-inverse rounded-lg hover:bg-devsuite-primary-hover transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Retry Connection
+            </button>
+            <p className="text-xs text-text-quaternary">
+              Check your Supabase configuration and internet connection
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Admin view
-  if (showAdmin) {
+  // Loading state - only show loading while initializing
+  if (loading && !isInitialized) {
     return (
-      <AdminRoute>
-        <AdminLayout onBack={() => setShowAdmin(false)} />
-      </AdminRoute>
+      <div className="min-h-screen bg-bg-canvas flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 bg-devsuite-primary rounded-lg flex items-center justify-center text-text-inverse font-bold text-xl mx-auto mb-4">
+            SM
+          </div>
+          <PulsingDotsLoader />
+          <p className="text-text-secondary mt-4">Loading Sprint Board...</p>
+        </div>
+      </div>
     );
   }
-
-  // Check for admin route
-  if (window.location.pathname === '/admin') {
-    return (
-      <AdminRoute>
-        <AdminLayout />
-      </AdminRoute>
-    );
-  }
-
-  const handleMoveSprint = (sprintId: string, newPosition: number) => {
-    // This function would be implemented when sprint reordering is added
-    console.log('Move sprint:', sprintId, 'to position:', newPosition);
-  };
 
   return (
-    <ProtectedRoute>
-      <ErrorBoundary>
-        <div className="min-h-screen bg-bg-canvas">
-          {/* FIXED: Only show loading overlay for initial load when no sprints exist */}
-          {showFullLoader && (
-            <div className="min-h-screen bg-bg-canvas flex items-center justify-center">
-              <div className="text-center">
-                <PulsingDotsLoader size="lg" className="mx-auto mb-4" />
-                <p className="text-text-secondary">Loading your sprint board...</p>
-              </div>
+    <div className="min-h-screen bg-bg-canvas">
+      {/* Header with proper props */}
+      <Header
+        activeView={activeView}
+        onViewChange={setActiveView}
+        onAddSprint={() => setAddSprintModalOpen(true)}
+        onOpenSettings={() => setSettingsModalOpen(true)}
+        onOpenProfileSettings={() => setProfileSettingsModalOpen(true)}
+      />
+
+        {/* Main content */}
+        <main className="container mx-auto px-6 py-8">
+          {activeView === 'active' ? (
+            <DragDropSprintBoard
+              sprints={sprints}
+              operationLoading={operationLoading}
+              getSprintStats={getSprintStats}
+              onAddStory={handleAddStory}
+              onOpenSprint={handleOpenSprint}
+              onCloseSprint={handleCloseSprint}
+              onDeleteSprint={handleDeleteSprint}
+              onToggleStory={handleToggleStory}
+              onMoveStory={handleMoveStory}
+              onMoveSprint={handleMoveSprint}
+              onEditStory={handleEditStory}
+            />
+          ) : (
+            <ArchiveView />
+          )}
+        </main>
+
+        {/* All Modals */}
+        {addStoryModal.isOpen && (
+          <StoryModal
+            isOpen={addStoryModal.isOpen}
+            sprintId={addStoryModal.sprintId}
+            sprintTitle={addStoryModal.sprintTitle}
+            aiSettings={aiSettings}
+            onClose={handleCloseStoryModal}
+            onSubmit={handleStorySubmit}
+          />
+        )}
+
+        {editStoryModal.isOpen && editStoryModal.story && (
+          <StoryModal
+            isOpen={editStoryModal.isOpen}
+            sprintId=""
+            sprintTitle=""
+            aiSettings={aiSettings}
+            story={editStoryModal.story}
+            onClose={handleCloseStoryModal}
+            onSubmit={handleStorySubmit}
+          />
+        )}
+
+        {openSprintModal.isOpen && (
+          <OpenSprintModal
+            isOpen={openSprintModal.isOpen}
+            sprint={sprints.find(s => s.id === openSprintModal.sprintId)!}
+            onClose={() => setOpenSprintModal({ isOpen: false, sprintId: '' })}
+          />
+        )}
+
+        {settingsModalOpen && (
+          <SettingsModal
+            isOpen={settingsModalOpen}
+            settings={aiSettings}
+            onClose={() => setSettingsModalOpen(false)}
+            onSave={handleAISettingsChange}
+          />
+        )}
+
+        {profileSettingsModalOpen && (
+          <ProfileSettingsModal
+            isOpen={profileSettingsModalOpen}
+            onClose={() => setProfileSettingsModalOpen(false)}
+          />
+        )}
+
+        {addSprintModalOpen && (
+          <AddSprintModal
+            isOpen={addSprintModalOpen}
+            onClose={() => setAddSprintModalOpen(false)}
+            onSubmit={handleAddSprint}
+          />
+        )}
+
+        {/* Debug panel in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="fixed bottom-4 right-4 bg-bg-primary border rounded-lg p-2 shadow-lg text-xs">
+            <div className="flex items-center gap-2 mb-1">
+              <Database className="w-3 h-3" />
+              <span className="font-medium">Debug Info</span>
             </div>
-          )}
-
-          {/* Error state overlay */}
-          {error && (
-            <div className="min-h-screen bg-bg-canvas flex items-center justify-center p-6">
-              <div className="bg-bg-primary border border-border-default rounded-xl p-8 max-w-md w-full text-center shadow-devsuite">
-                <div className="flex justify-center mb-4">
-                  {error.includes('Missing Supabase') ? (
-                    <Database className="w-12 h-12 text-warning" />
-                  ) : (
-                    <AlertTriangle className="w-12 h-12 text-error" />
-                  )}
-                </div>
-                <h1 className="text-xl font-bold text-text-primary mb-2">
-                  {error.includes('Missing Supabase') ? 'Database Setup Required' : 'Connection Error'}
-                </h1>
-                <p className="text-text-secondary mb-6">
-                  {error.includes('Missing Supabase') 
-                    ? 'Please click "Connect to Supabase" in the top right to set up your database.'
-                    : error
-                  }
-                </p>
-                <button
-                  onClick={forceRefresh}
-                  className="flex items-center gap-2 px-4 py-2 bg-devsuite-primary text-text-inverse rounded-lg hover:bg-devsuite-primary-hover transition-colors mx-auto"
-                >
-                  <Database className="w-4 h-4" />
-                  Retry Connection
-                </button>
-              </div>
+            <div className="space-y-1 text-text-tertiary">
+              <div>Sprints: {sprints.length}</div>
+              <div>Initialized: {isInitialized ? '✅' : '❌'}</div>
+              <div>Loading: {loading ? '⏳' : '✅'}</div>
+              {error && <div className="text-error">Error: {error}</div>}
+              <button
+                onClick={forceRefresh}
+                className="text-devsuite-primary hover:underline"
+              >
+                Force Refresh
+              </button>
             </div>
-          )}
-
-          {/* FIXED: Show content immediately when sprints exist, with optional operation loading */}
-          {!showFullLoader && !error && (
-            <>
-              <Header
-                activeView={activeView}
-                onViewChange={setActiveView}
-                onAddSprint={handleAddSprint}
-                onOpenSettings={handleOpenSettings}
-                onOpenProfileSettings={handleOpenProfileSettings}
-              />
-              
-              {activeView === 'active' ? (
-                <DragDropSprintBoard
-                  sprints={sprints}
-                  operationLoading={operationLoading}
-                  getSprintStats={getSprintStats}
-                  onAddStory={handleAddStory}
-                  onOpenSprint={handleOpenSprint}
-                  onCloseSprint={handleCloseSprint}
-                  onDeleteSprint={handleDeleteSprint}
-                  onToggleStory={handleToggleStory}
-                  onMoveStory={handleMoveStory}
-                  onMoveSprint={handleMoveSprint}
-                  onEditStory={handleEditStory}
-                  onCloseBoard={handleCloseBoard}
-                />
-              ) : (
-                <ArchiveView />
-              )}
-
-              <StoryModal
-                isOpen={addStoryModal.isOpen}
-                sprintId={addStoryModal.sprintId}
-                sprintTitle={addStoryModal.sprintTitle}
-                aiSettings={aiSettings}
-                onClose={handleCloseAddStoryModal}
-                onSubmit={handleSubmitStory}
-              />
-
-              <StoryModal
-                isOpen={editStoryModal.isOpen}
-                sprintId={editStoryModal.story?.sprintId || ''}
-                sprintTitle=""
-                aiSettings={aiSettings}
-                story={editStoryModal.story}
-                onClose={handleCloseEditStoryModal}
-                onSubmit={handleSubmitStory}
-                onUpdate={handleUpdateStory}
-                onDelete={handleDeleteStory}
-              />
-
-              <SettingsModal
-                isOpen={settingsModalOpen}
-                settings={aiSettings}
-                onClose={() => setSettingsModalOpen(false)}
-                onSave={handleSaveAISettings}
-              />
-
-              <ProfileSettingsModal
-                isOpen={profileSettingsModalOpen}
-                onClose={() => setProfileSettingsModalOpen(false)}
-              />
-
-              {openSprintModal.sprint && (
-                <OpenSprintModal
-                  isOpen={openSprintModal.isOpen}
-                  sprint={openSprintModal.sprint}
-                  onClose={handleCloseOpenSprintModal}
-                />
-              )}
-
-              <AddSprintModal
-                isOpen={addSprintModal}
-                onClose={handleCloseAddSprintModal}
-                onSubmit={handleSubmitSprint}
-              />
-            </>
-          )}
-
-          {/* Development Debug Panel */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="fixed bottom-4 right-4 bg-bg-primary border border-border-default rounded-lg p-3 shadow-devsuite text-xs max-w-xs">
-              <div className="flex items-center gap-2 mb-2">
-                <Database className="w-4 h-4 text-devsuite-primary" />
-                <span className="font-semibold text-text-primary">Debug Panel</span>
-              </div>
-              <div className="space-y-1 text-text-tertiary">
-                <div className="flex justify-between">
-                  <span>Sprints:</span>
-                  <span className="text-text-primary">{sprints.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Loading:</span>
-                  <span className={loading ? 'text-warning' : 'text-success'}>
-                    {loading ? '⏳' : '✅'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Error:</span>
-                  <span className={error ? 'text-error' : 'text-success'}>
-                    {error ? '❌' : '✅'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Backlog:</span>
-                  <span className={sprints.some(s => s.isBacklog) ? 'text-success' : 'text-warning'}>
-                    {sprints.some(s => s.isBacklog) ? '✅' : '⚠️'}
-                  </span>
-                </div>
-                <button
-                  onClick={forceRefresh}
-                  className="w-full mt-2 px-2 py-1 bg-devsuite-primary text-text-inverse text-xs rounded hover:bg-devsuite-primary-hover transition-colors"
-                >
-                  Force Refresh
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </ErrorBoundary>
-    </ProtectedRoute>
-  );
-}
+          </div>
+        )}
+      </div>
+    );
+  }
 
 export default App;

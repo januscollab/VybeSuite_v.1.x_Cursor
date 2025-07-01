@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Plus, Play, FileText, GripVertical } from 'lucide-react';
 import { Story } from '../types';
 
@@ -32,8 +32,6 @@ export const SprintCard: React.FC<SprintCardProps> = ({
   onCloseSprint,
   onToggleStory
 }) => {
-  const [showCloseDropdown, setShowCloseDropdown] = useState(false);
-
   const renderStories = (storiesToRender: Story[]) => (
     <div className={isBacklog ? 'grid grid-cols-1 lg:grid-cols-2 gap-2' : 'space-y-2'}>
       {storiesToRender.map((story) => (
@@ -74,9 +72,40 @@ export const SprintCard: React.FC<SprintCardProps> = ({
   );
 
   return (
-    <div className={`bg-bg-primary border border-border-default rounded-xl p-6 shadow-devsuite transition-all hover:shadow-devsuite-hover hover:border-border-strong ${
+    <div className={`sprint-card bg-bg-primary border border-border-default rounded-xl p-6 shadow-devsuite transition-all hover:shadow-devsuite-hover hover:border-border-strong relative ${
       isBacklog ? 'col-span-full' : ''
     }`}>
+      {/* Glassmorphism Context Menu */}
+      <div className="glassmorphism-context-menu">
+        <button 
+          className="btn-glass btn-glass-primary" 
+          onClick={onAddStory}
+          title="Add new story to this sprint"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Add Story
+        </button>
+        
+        <button 
+          className="btn-glass btn-glass-secondary" 
+          onClick={onOpenSprint}
+          title="Open sprint"
+        >
+          <Play className="w-3.5 h-3.5" />
+          Open Sprint
+        </button>
+        
+        <button 
+          className="btn-glass btn-glass-neutral"
+          onClick={() => onCloseSprint('completed')}
+          disabled={stats.done === 0}
+          title={stats.done === 0 ? "No completed stories to close" : "Close completed stories"}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          Close Stories
+        </button>
+      </div>
+
       {/* Sprint Header */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
@@ -101,59 +130,6 @@ export const SprintCard: React.FC<SprintCardProps> = ({
               <span>✓</span>
               <span>{stats.done} Done</span>
             </div>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={onAddStory}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary rounded-md transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Add Story
-          </button>
-
-          <button
-            onClick={onOpenSprint}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary rounded-md transition-all"
-          >
-            <Play className="w-4 h-4" />
-            Open
-          </button>
-
-          <div className="relative">
-            <button
-              onClick={() => setShowCloseDropdown(!showCloseDropdown)}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary rounded-md transition-all"
-            >
-              <FileText className="w-4 h-4" />
-              Close
-              <span className="text-xs">▼</span>
-            </button>
-
-            {showCloseDropdown && (
-              <div className="absolute top-full right-0 mt-1 bg-bg-primary border border-border-default rounded-lg shadow-devsuite-hover z-50 min-w-44 overflow-hidden">
-                <button
-                  onClick={() => {
-                    onCloseSprint('completed');
-                    setShowCloseDropdown(false);
-                  }}
-                  className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors border-b border-border-subtle"
-                >
-                  Close Completed
-                </button>
-                <button
-                  onClick={() => {
-                    onCloseSprint('all');
-                    setShowCloseDropdown(false);
-                  }}
-                  className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors"
-                >
-                  Close All
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>

@@ -29,20 +29,20 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="w-8 h-8 bg-devsuite-primary rounded-lg flex items-center justify-center text-text-inverse font-bold text-base">
               SM
             </div>
-            <span className="text-xl font-bold text-text-primary">Scrum Master</span>
+            <span className="text-xl font-bold text-text-primary">Sprint Boards</span>
           </div>
 
           {/* Navigation */}
           <nav className="flex items-center gap-4">
             {/* Admin Menu - Only visible to super admins */}
             {isAdmin && (
-              <a
-                href="/admin"
+              <button
+                onClick={() => window.open('/admin', '_blank')}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary transition-all"
               >
                 <Shield className="w-4 h-4" />
                 Admin
-              </a>
+              </button>
             )}
 
             {/* Toggle Switch */}

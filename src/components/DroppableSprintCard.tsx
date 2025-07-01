@@ -26,6 +26,9 @@ interface DroppableSprintCardProps {
   onCloseBoard?: () => void;
 }
 
+// VERBOSE_LOGGING: Set to true only when debugging specific issues
+const VERBOSE_LOGGING = false;
+
 export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
   id,
   title,
@@ -44,29 +47,13 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
   onEditStory,
   onCloseBoard
 }) => {
-  const [showCloseDropdown, setShowCloseDropdown] = useState(false);
-  const [dropdownTimeout, setDropdownTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
-  const handleMouseEnterClose = () => {
-    if (dropdownTimeout) {
-      clearTimeout(dropdownTimeout);
-      setDropdownTimeout(null);
+  const handleCloseSprint = (type: 'completed' | 'all') => {
+    if (VERBOSE_LOGGING) {
+      console.log('Close Sprint clicked for sprint:', id, 'type:', type);
     }
-    setShowCloseDropdown(true);
-  };
-
-  const handleMouseLeaveClose = () => {
-    const timeout = setTimeout(() => {
-      setShowCloseDropdown(false);
-    }, 150); // Small delay to prevent flickering
-    setDropdownTimeout(timeout);
-  };
-
-  const handleCloseSprint = (sprintId: string, type: 'completed' | 'all') => {
-    console.log('Close Sprint clicked for sprint:', sprintId, 'type:', type);
-    onCloseSprint(sprintId, type);
-    setShowCloseDropdown(false);
+    onCloseSprint(type);
   };
 
   const handleDeleteSprint = () => {
@@ -91,14 +78,33 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
   const layoutRules = validateSprintLayout({ id, isBacklog });
   const isPrioritySprint = id === 'priority';
   const isBacklogSprint = isBacklog;
-  const isUserGeneratedSprint = layoutRules.isDeletable && !isBacklogSprint; // Backlog is never deletable
+  
+  // SPECIAL SPRINT IDENTIFICATION: Both Priority and Backlog are special sprints
+  const isSpecialSprint = isPrioritySprint || isBacklogSprint;
+  
+  // TRIPLE PROTECTION: Priority Sprints should NEVER have delete buttons
+  // This is a fundamental rule that must be enforced at multiple levels
+  const isUserGeneratedSprint = layoutRules.isDeletable && !isBacklogSprint && !isPrioritySprint;
+  
+  // CRITICAL: Additional Priority Sprint protection - NEVER allow delete for priority sprints
+  const canShowDeleteButton = isUserGeneratedSprint && id !== 'priority' && !isPrioritySprint && !isSpecialSprint;
+  
+  // DEBUG: Priority Sprint detection (disabled to reduce console noise)
+  if (VERBOSE_LOGGING && isPrioritySprint) {
+    console.log('🔒 Priority Sprint detected:', {
+      id,
+      isPrioritySprint,
+      isSpecialSprint,
+      layoutRules,
+      canShowDeleteButton,
+      isUserGeneratedSprint
+    });
+  }
 
   return (
-    <div className={`bg-bg-primary border rounded-xl p-6 shadow-devsuite transition-all hover:shadow-devsuite-hover hover:border-border-strong relative ${
-      isPrioritySprint 
+    <div className={`sprint-card bg-bg-primary border rounded-xl p-6 shadow-devsuite transition-all hover:shadow-devsuite-hover hover:border-border-strong relative ${
+      isSpecialSprint
         ? 'border-devsuite-primary border-2 bg-gradient-to-br from-bg-primary to-devsuite-primary-subtle' 
-        : isBacklogSprint
-        ? 'border-devsuite-primary border-2 bg-gradient-to-br from-bg-primary to-devsuite-primary-subtle'  // Same styling as Priority Sprint
         : 'border-border-default'
     }`}>
       {/* Close Button for Priority Sprint */}
@@ -112,6 +118,44 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
         </button>
       )}
 
+      {/* Glassmorphism Context Menu */}
+      <div className="glassmorphism-context-menu">
+        <button 
+          className="btn-glass btn-glass-primary" 
+          onClick={onAddStory}
+          title="Add new story to this sprint"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Add Story
+        </button>
+        
+        {/* Hide Open button for Backlog sprint as per layout rules */}
+        {!isBacklogSprint && (
+          <button 
+            className="btn-glass btn-glass-secondary" 
+            onClick={onOpenSprint}
+            disabled={stats.todo === 0}
+            title={stats.todo === 0 ? "No stories to open" : "Open sprint"}
+          >
+            <Play className="w-3.5 h-3.5" />
+            Open Sprint
+          </button>
+        )}
+        
+        {/* Show Close button for ALL sprints except Backlog */}
+        {!isBacklogSprint && (
+          <button 
+            className="btn-glass btn-glass-neutral"
+            onClick={() => handleCloseSprint('completed')}
+            disabled={isSprintLoading || stats.done === 0}
+            title={stats.done === 0 ? "No completed stories to close" : "Close completed stories"}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            Close Stories
+          </button>
+        )}
+      </div>
+
       {/* Sprint Header */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
@@ -123,9 +167,7 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
             )}
             <span className="text-base">{icon}</span>
             <h3 className={`font-semibold text-lg ${
-              isPrioritySprint ? 'text-devsuite-primary' : 'text-text-primary'
-            } ${
-              isBacklogSprint ? 'text-devsuite-primary' : ''
+              isSpecialSprint ? 'text-devsuite-primary' : 'text-text-primary'
             }`}>
               {title}
             </h3>
@@ -135,94 +177,32 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
               </span>
             )}
             {isBacklogSprint && (
-              <span className="px-2 py-0.5 bg-devsuite-secondary text-text-inverse text-xs font-medium rounded-full">
+              <span className="px-2 py-0.5 bg-devsuite-primary text-text-inverse text-xs font-medium rounded-full">
                 FUTURE ENHANCEMENTS
               </span>
             )}
           </div>
           
-          <div className="flex gap-4 text-sm text-text-tertiary">
-            <div className="flex items-center gap-1">
+          <div className="flex gap-2 text-sm text-text-tertiary">
+            <div className="flex items-center gap-1 whitespace-nowrap">
               <span>○</span>
               <span>{stats.todo} To Do</span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 whitespace-nowrap">
               <span>⚡</span>
               <span>{stats.inProgress} In Progress</span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 whitespace-nowrap">
               <span>✓</span>
               <span>{stats.done} Done</span>
             </div>
           </div>
         </div>
-
-        {/* Actions */}
-        <div className={`flex items-center gap-1.5 ${isPrioritySprint ? 'mr-10' : ''}`}>
-          <button
-            onClick={onAddStory}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary rounded-md transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Add Story
-          </button>
-
-          <button
-            onClick={onOpenSprint}
-            disabled={stats.todo === 0}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary disabled:hover:bg-transparent disabled:hover:text-text-secondary"
-          >
-            <Play className="w-4 h-4" />
-            Open
-          </button>
-
-          {/* FIXED: Show Close button for ALL sprints except Backlog (including Priority Sprint) */}
-          {!isBacklogSprint && (
-            <div className="relative">
-              <button
-                onMouseEnter={handleMouseEnterClose}
-                onMouseLeave={handleMouseLeaveClose}
-                disabled={isSprintLoading}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary disabled:hover:bg-transparent disabled:hover:text-text-secondary"
-              >
-                <FileText className="w-4 h-4" />
-                Close
-                <span className="text-xs">▼</span>
-              </button>
-
-              {showCloseDropdown && (
-                <div 
-                  className="absolute top-full right-0 mt-1 bg-bg-primary border border-border-default rounded-lg shadow-devsuite-hover z-50 min-w-44 overflow-hidden"
-                  onMouseEnter={handleMouseEnterClose}
-                  onMouseLeave={handleMouseLeaveClose}
-                >
-                  <button
-                    onClick={() => {
-                      handleCloseSprint(id, 'completed');
-                    }}
-                    disabled={stats.done === 0 || isSprintLoading}
-                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors border-b border-border-subtle disabled:opacity-50 disabled:cursor-not-allowed disabled:text-text-disabled disabled:hover:bg-transparent disabled:hover:text-text-disabled text-text-secondary hover:bg-bg-muted hover:text-text-primary"
-                  >
-                    Close Completed
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleCloseSprint(id, 'all');
-                    }}
-                    disabled={isSprintLoading}
-                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-bg-muted hover:text-text-primary transition-colors disabled:opacity-50"
-                  >
-                    Close All
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* CRITICAL: Delete Button - ONLY for User-Generated Sprints (NEVER backlog or priority) */}
-      {isUserGeneratedSprint && (
+      {/* QUADRUPLE PROTECTION: Multiple checks to ensure Special Sprints NEVER get delete buttons */}
+      {canShowDeleteButton && !isPrioritySprint && !isSpecialSprint && id !== 'priority' && (
         <button
           onClick={handleDeleteSprint}
           disabled={isDeleteLoading || stories.length > 0}

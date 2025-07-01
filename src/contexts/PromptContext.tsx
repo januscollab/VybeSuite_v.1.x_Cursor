@@ -76,9 +76,11 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   };
 
-  // Load prompts when user is authenticated
-  useEffect(() => {
-    if (user) {
+  // Load prompts lazily when first requested (instead of immediately when user authenticates)
+  const loadPromptsIfNeeded = () => {
+    if (!isLoaded && user) {
+      console.log('Loading AI prompts on-demand...');
+      
       // Parse the open sprint prompt to separate main template from story format
       const { mainPrompt, storyFormat } = parseOpenSprintPrompt(openSprintPromptRaw);
       
@@ -91,9 +93,13 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         openSprintStoryFormat: storyFormat
       });
       setIsLoaded(true);
-      console.log('AI prompts loaded successfully');
-      console.log('Story format extracted:', storyFormat);
-    } else {
+      console.log('✅ AI prompts loaded successfully');
+    }
+  };
+
+  // Reset prompts when user logs out
+  useEffect(() => {
+    if (!user) {
       setIsLoaded(false);
       setPrompts({
         claude: '',
@@ -106,6 +112,9 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [user]);
 
   const getStoryGenerationPrompt = (provider: 'openai' | 'anthropic', includeGithubCodeReview: boolean = false): string => {
+    // Load prompts on-demand when first accessed
+    loadPromptsIfNeeded();
+    
     if (!isLoaded) {
       console.warn('Prompts not loaded yet, using fallback');
       return 'You are an expert Agile/Scrum story writer. Generate a user story based on the given prompt.';
@@ -123,6 +132,9 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const getOpenSprintPromptTemplate = (): string => {
+    // Load prompts on-demand when first accessed
+    loadPromptsIfNeeded();
+    
     if (!isLoaded) {
       console.warn('Prompts not loaded yet, using fallback');
       return 'Review and Provide a Build Plan for the following features for {sprintTitle} Sprint:\n\n{storyList}';
@@ -131,6 +143,9 @@ export const PromptProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const getOpenSprintStoryFormat = (): string => {
+    // Load prompts on-demand when first accessed
+    loadPromptsIfNeeded();
+    
     if (!isLoaded) {
       console.warn('Prompts not loaded yet, using fallback story format');
       return '{storyNumber}: {storyTitle}\nDescription: {storyDescription}\n------------\n';
