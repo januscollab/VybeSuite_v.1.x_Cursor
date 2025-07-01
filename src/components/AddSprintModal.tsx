@@ -115,7 +115,7 @@ export const AddSprintModal: React.FC<AddSprintModalProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Sprint Title */}
             <div>
-              <label htmlFor="sprintTitle" className="block font-semibold text-sm mb-2 text-text-primary">
+              <label htmlFor="sprintTitle" className="form-label">
                 Sprint Title <span className="text-error ml-0.5">*</span>
               </label>
               <input
@@ -124,7 +124,7 @@ export const AddSprintModal: React.FC<AddSprintModalProps> = ({
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="Enter sprint title..."
-                className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-sm text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit"
+                className="form-input"
                 required
               />
               <div className="text-xs text-text-tertiary mt-1">
@@ -134,7 +134,7 @@ export const AddSprintModal: React.FC<AddSprintModalProps> = ({
 
             {/* Sprint Description */}
             <div>
-              <label htmlFor="sprintDescription" className="block font-semibold text-sm mb-2 text-text-primary">
+              <label htmlFor="sprintDescription" className="form-label">
                 Sprint Description
               </label>
               <textarea
@@ -142,7 +142,7 @@ export const AddSprintModal: React.FC<AddSprintModalProps> = ({
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Describe the goals and objectives of this sprint..."
-                className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-sm text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit resize-vertical min-h-[80px]"
+                className="form-input resize-vertical min-h-[80px]"
                 rows={3}
               />
               <div className="text-xs text-text-tertiary mt-1">
@@ -152,7 +152,7 @@ export const AddSprintModal: React.FC<AddSprintModalProps> = ({
 
             {/* Sprint Icon */}
             <div>
-              <label className="block font-semibold text-sm mb-2 text-text-primary">
+              <label className="form-label">
                 Sprint Icon <span className="text-error ml-0.5">*</span>
               </label>
               <div className="space-y-3">
@@ -195,14 +195,14 @@ export const AddSprintModal: React.FC<AddSprintModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-1.5 px-4 py-2 bg-transparent text-text-secondary text-sm font-medium cursor-pointer border border-border-default rounded-lg transition-all hover:bg-bg-muted hover:text-text-primary"
+            className="btn-secondary-action"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={!formData.title.trim()}
-            className="flex items-center gap-1.5 px-4 py-2 bg-devsuite-primary text-text-inverse text-sm font-medium cursor-pointer border border-devsuite-primary rounded-lg transition-all hover:bg-devsuite-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary-action"
           >
             <Plus className="w-4 h-4" />
             Create Sprint

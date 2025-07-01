@@ -105,20 +105,20 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
           {/* Search Input */}
           <div className="relative">
-            <label className="block text-sm font-medium text-text-primary mb-2">Keywords</label>
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-quaternary" />
+            <label className="form-label">Keywords</label>
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-quaternary z-10" />
             <input
               type="text"
               value={filters.query}
               onChange={(e) => onUpdateFilters({ query: e.target.value })}
               placeholder="Search archived stories..."
-              className="w-full pl-10 pr-4 py-3 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+              className="form-input pl-10"
             />
           </div>
 
           {/* Date Range */}
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label className="form-label">
               Date Range {!filters.dateRange.start && !filters.dateRange.end && (
                 <span className="text-xs text-devsuite-primary font-normal">(All Time)</span>
               )}
@@ -131,7 +131,7 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
                   dateRange: { ...filters.dateRange, start: e.target.value || null }
                 })}
                 placeholder="From"
-                className="flex-1 px-3 py-3 border border-border-default rounded-lg bg-bg-primary text-text-primary focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+                className="form-input flex-1"
               />
               <input
                 type="date"
@@ -140,7 +140,7 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
                   dateRange: { ...filters.dateRange, end: e.target.value || null }
                 })}
                 placeholder="To"
-                className="flex-1 px-3 py-3 border border-border-default rounded-lg bg-bg-primary text-text-primary focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+                className="form-input flex-1"
               />
             </div>
             {!filters.dateRange.start && !filters.dateRange.end && (
@@ -153,7 +153,7 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
 
           {/* Tags Filter */}
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label className="form-label">
               Tags
             </label>
             <div className="relative">
@@ -163,7 +163,7 @@ export const SearchFilterPanel: React.FC<SearchFilterPanelProps> = ({
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={handleTagInput}
                 placeholder="Type and press Enter to add tags..."
-                className="w-full px-3 py-3 border border-border-default rounded-lg bg-bg-primary text-text-primary placeholder-text-placeholder focus:outline-none focus:border-devsuite-primary focus:ring-2 focus:ring-devsuite-primary/20 transition-all"
+                className="form-input"
               />
               {/* Tag autocomplete suggestions could be added here */}
             </div>

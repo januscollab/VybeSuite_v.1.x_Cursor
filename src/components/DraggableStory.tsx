@@ -42,15 +42,19 @@ export const DraggableStory: React.FC<DraggableStoryProps> = ({
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          {...provided.dragHandleProps}
           onClick={handleStoryClick}
-          className={`bg-bg-secondary border border-border-subtle rounded-lg p-3 flex items-center gap-3 transition-all hover:bg-bg-muted hover:border-border-default hover:shadow-sm ${
+          className={`story-item ${
             snapshot.isDragging 
               ? 'shadow-devsuite-hover border-devsuite-primary bg-bg-primary transform rotate-2' 
               : ''
           } ${isToggling ? 'opacity-75' : ''} ${onEdit ? 'cursor-pointer' : ''}`}
         >
-          <span className="text-text-quaternary cursor-grab font-bold text-xs">::</span>
+          <div {...provided.dragHandleProps} className="drag-handle">
+            <div className="drag-dot"></div>
+            <div className="drag-dot"></div>
+            <div className="drag-dot"></div>
+            <div className="drag-dot"></div>
+          </div>
           
           <button
             onClick={handleToggle}

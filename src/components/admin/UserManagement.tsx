@@ -46,12 +46,10 @@ export const UserManagement: React.FC = () => {
             id: currentUser.id,
             email: currentUser.email || '',
             role: 'super_admin',
-            created_at: currentUser.created_at,
-            last_sign_in_at: currentUser.last_sign_in_at,
-            email_confirmed_at: currentUser.email_confirmed_at,
+            created_at: currentUser.created_at || '',
+            last_sign_in_at: currentUser.last_sign_in_at || null,
+            email_confirmed_at: currentUser.email_confirmed_at || null,
             user_metadata: currentUser.user_metadata || {}
-          }]);
-        }
         return;
       }
 
@@ -198,16 +196,7 @@ export const UserManagement: React.FC = () => {
     return user.email.charAt(0).toUpperCase();
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'super_admin':
-        return 'bg-devsuite-primary text-text-inverse';
-      case 'admin':
-        return 'bg-devsuite-secondary text-text-inverse';
-      default:
-        return 'bg-bg-muted text-text-secondary';
-    }
-  };
+
 
   if (loading) {
     return (
@@ -302,14 +291,12 @@ export const UserManagement: React.FC = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
+                    <span className={`badge ${user.role === 'super_admin' ? 'priority' : user.role === 'admin' ? 'completed' : 'tag'}`}>
                       {user.role === 'super_admin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'User'}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      user.email_confirmed_at ? 'bg-success-light text-success-dark' : 'bg-warning-light text-warning-dark'
-                    }`}>
+                    <span className={`badge ${user.email_confirmed_at ? 'completed' : 'priority'}`}>
                       {user.email_confirmed_at ? 'Active' : 'Pending'}
                     </span>
                   </td>

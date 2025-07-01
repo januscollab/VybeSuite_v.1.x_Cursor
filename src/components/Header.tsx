@@ -46,24 +46,16 @@ export const Header: React.FC<HeaderProps> = ({
             )}
 
             {/* Toggle Switch */}
-            <div className="flex items-center gap-3 bg-bg-muted rounded-lg p-1">
+            <div className="main-toggle">
               <button
                 onClick={() => onViewChange('active')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  activeView === 'active'
-                    ? 'text-devsuite-primary'
-                    : 'text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary'
-                }`}
+                className={`toggle-option ${activeView === 'active' ? 'active' : ''}`}
               >
                 Active
               </button>
               <button
                 onClick={() => onViewChange('archive')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                  activeView === 'archive'
-                    ? 'text-devsuite-primary'
-                    : 'text-text-secondary hover:bg-devsuite-primary/10 hover:text-devsuite-primary'
-                }`}
+                className={`toggle-option ${activeView === 'archive' ? 'active' : ''}`}
               >
                 Archive
               </button>

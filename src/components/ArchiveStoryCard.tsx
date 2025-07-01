@@ -19,8 +19,8 @@ export const ArchiveStoryCard: React.FC<ArchiveStoryCardProps> = ({
 }) => {
   return (
     <div 
-      className={`bg-bg-primary border rounded-lg p-4 transition-all hover:shadow-sm cursor-pointer ${
-      isSelected ? 'border-devsuite-primary bg-devsuite-primary-subtle' : 'border-border-default'
+      className={`story-item cursor-pointer ${
+      isSelected ? 'border-devsuite-primary bg-devsuite-primary-subtle' : ''
     }`}
       onClick={onViewDetails}
     >
@@ -38,7 +38,7 @@ export const ArchiveStoryCard: React.FC<ArchiveStoryCardProps> = ({
           />
           <span className="font-medium text-text-primary text-sm">{story.number}</span>
           {story.completed && (
-            <span className="text-xs bg-success-light text-success-dark px-2 py-0.5 rounded-full">
+            <span className="badge completed">
               Completed
             </span>
           )}
@@ -75,7 +75,7 @@ export const ArchiveStoryCard: React.FC<ArchiveStoryCardProps> = ({
           {story.tags.slice(0, 3).map(tag => (
             <span
               key={tag}
-              className="inline-flex items-center gap-1 px-2 py-0.5 bg-bg-muted text-text-secondary text-xs rounded-full"
+              className="badge tag"
             >
               <Tag className="w-2.5 h-2.5" />
               {tag}

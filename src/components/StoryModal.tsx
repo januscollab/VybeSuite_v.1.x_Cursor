@@ -252,7 +252,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
           <form onSubmit={handleSubmit} className="space-y-3">
             {/* Story Title */}
             <div className="mb-3">
-              <label htmlFor="storyTitle" className="block font-semibold text-[13px] mb-1 text-text-primary">
+              <label htmlFor="storyTitle" className="form-label-compact">
                 Story Title <span className="text-error ml-0.5">*</span>
               </label>
               <input
@@ -261,7 +261,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="Enter story title..."
-                className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit"
+                className="form-input-compact"
                 required
               />
             </div>
@@ -269,7 +269,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
             {/* Story Prompt - Only show in add mode */}
             {!isEditMode && (
               <div className="mb-3">
-                <label htmlFor="storyPrompt" className="block font-semibold text-[13px] mb-1 text-text-primary">
+                <label htmlFor="storyPrompt" className="form-label-compact">
                   Story Prompt (AI Assistance)
                 </label>
                 
@@ -317,7 +317,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
                   value={storyPrompt}
                   onChange={(e) => setStoryPrompt(e.target.value)}
                   placeholder="Describe what you want to build... (e.g., 'Create a user login form with email validation')"
-                  className="w-full px-3 py-2.5 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit resize min-h-[80px] max-h-[300px]"
+                  className="form-input-compact resize min-h-[80px] max-h-[300px]"
                   style={{
                     resize: 'both',
                     minWidth: '100%',
@@ -341,7 +341,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
                       type="button"
                       onClick={handleGenerateStory}
                       disabled={isGenerating || !hasValidApiKey(selectedProvider)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 bg-devsuite-primary text-text-inverse text-xs font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all hover:bg-devsuite-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="btn-primary-action text-xs py-1.5 px-2.5"
                     >
                       <Sparkles className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
                       {isGenerating ? 'Generating...' : `Generate with ${getProviderName(selectedProvider)}`}
@@ -351,7 +351,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
                       type="button"
                       onClick={handleCreateStory}
                       disabled={isGenerating}
-                      className="flex items-center gap-1 px-2.5 py-1.5 bg-devsuite-primary text-text-inverse text-xs font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all hover:bg-devsuite-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="btn-primary-action text-xs py-1.5 px-2.5"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Create Story
@@ -369,7 +369,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
 
             {/* Description */}
             <div className="mb-3">
-              <label htmlFor="description" className="block font-semibold text-[13px] mb-1 text-text-primary">
+              <label htmlFor="description" className="form-label-compact">
                 Description
                 {aiGenerationWarning && (
                   <span className="ml-2 text-xs text-warning-dark font-normal">
@@ -382,10 +382,10 @@ export const StoryModal: React.FC<StoryModalProps> = ({
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Detailed description of the story..."
-                className={`w-full px-3 py-2.5 border-2 rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] placeholder-text-placeholder font-inherit resize-vertical min-h-[70px] ${
+                className={`form-input-compact resize-vertical min-h-[70px] ${
                   aiGenerationWarning 
                     ? 'border-warning focus:border-warning' 
-                    : 'border-border-default focus:border-devsuite-primary'
+                    : ''
                 }`}
               />
               <div className="text-[11px] text-text-tertiary mt-0.5">
@@ -398,7 +398,7 @@ export const StoryModal: React.FC<StoryModalProps> = ({
 
             {/* Tags */}
             <div className="mb-3">
-              <label htmlFor="tags" className="block font-semibold text-[13px] mb-1 text-text-primary">
+              <label htmlFor="tags" className="form-label-compact">
                 Tags
               </label>
               <div className="border-2 border-border-default rounded-lg bg-bg-primary p-1.5 min-h-[40px] flex flex-wrap gap-1.5 items-start transition-all focus-within:border-devsuite-primary focus-within:shadow-[0_0_0_3px_rgba(252,128,25,0.1)]">
@@ -434,25 +434,29 @@ export const StoryModal: React.FC<StoryModalProps> = ({
             {/* Priority - Only show in add mode */}
             {!isEditMode && (
               <div className="mb-3">
-                <label htmlFor="priority" className="block font-semibold text-[13px] mb-1 text-text-primary">
-                  Priority
-                </label>
-                <div className="relative">
-                  <select
-                    id="priority"
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
-                    className="w-full px-3 py-2.5 pr-9 border-2 border-border-default rounded-lg bg-bg-primary text-[13px] text-text-primary transition-all focus:outline-none focus:border-devsuite-primary focus:shadow-[0_0_0_3px_rgba(252,128,25,0.1)] cursor-pointer appearance-none font-inherit"
+                <label className="form-label-compact">Priority Level</label>
+                <div className="priority-toggle">
+                  <button
+                    type="button"
+                    onClick={() => setPriority('low')}
+                    className={`priority-option ${priority === 'low' ? 'active' : ''}`}
                   >
-                    <option value="">Select priority...</option>
-                    <option value="critical">🔴 Critical</option>
-                    <option value="high">🟠 High</option>
-                    <option value="medium">🟡 Medium</option>
-                    <option value="low">🟢 Low</option>
-                  </select>
-                  <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-quaternary pointer-events-none w-4 h-4 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="6,9 12,15 18,9"></polyline>
-                  </svg>
+                    🟢 Low
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPriority('medium')}
+                    className={`priority-option ${priority === 'medium' ? 'active' : ''}`}
+                  >
+                    🟡 Medium
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPriority('high')}
+                    className={`priority-option ${priority === 'high' ? 'active' : ''}`}
+                  >
+                    🔴 High
+                  </button>
                 </div>
               </div>
             )}
@@ -471,14 +475,14 @@ export const StoryModal: React.FC<StoryModalProps> = ({
               <div className="flex gap-2">
                 <button
                   onClick={handleDelete}
-                  className="flex items-center gap-2 px-3 py-2 bg-error text-text-inverse text-sm font-medium rounded-lg hover:bg-error-dark transition-all"
+                  className="btn-primary-action bg-error hover:bg-error-dark"
                 >
                   <Trash2 className="w-4 h-4" />
                   Delete Story
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirmation(false)}
-                  className="px-3 py-2 text-sm font-medium text-text-secondary border border-border-default rounded-lg hover:bg-bg-muted transition-all"
+                  className="btn-secondary-action"
                 >
                   Cancel
                 </button>
@@ -505,14 +509,14 @@ export const StoryModal: React.FC<StoryModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex items-center gap-1.5 px-3 py-2 bg-transparent text-text-secondary text-[13px] font-medium cursor-pointer border border-border-default rounded-md transition-all hover:bg-bg-muted hover:text-text-primary"
+              className="btn-secondary-action"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={!formData.title.trim()}
-              className="flex items-center gap-1.5 px-3 py-2 bg-devsuite-primary text-text-inverse text-[13px] font-medium cursor-pointer border border-devsuite-primary rounded-md transition-all hover:bg-devsuite-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary-action"
             >
               {isEditMode ? (
                 <>

@@ -161,8 +161,11 @@ export const DroppableSprintCard: React.FC<DroppableSprintCardProps> = ({
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
             {layoutRules.isDraggable && dragHandleProps && (
-              <div {...dragHandleProps}>
-                <GripVertical className="w-4 h-4 text-text-quaternary cursor-grab hover:text-devsuite-primary transition-colors" />
+              <div {...dragHandleProps} className="drag-handle">
+                <div className="drag-dot"></div>
+                <div className="drag-dot"></div>
+                <div className="drag-dot"></div>
+                <div className="drag-dot"></div>
               </div>
             )}
             <span className="text-base">{icon}</span>
