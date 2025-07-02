@@ -1,24 +1,17 @@
+import { debug } from '../utils/debug';
 import React from 'react';
-
 interface PulsingDotsLoaderProps {
-  size?: 'sm' | 'md' | 'lg';
-  className?: string;
+    size?: 'sm' | 'md' | 'lg';
+    className?: string;
 }
-
-export const PulsingDotsLoader: React.FC<PulsingDotsLoaderProps> = ({ 
-  size = 'md', 
-  className = '' 
-}) => {
-  const sizeConfig = {
-    sm: { dotSize: '8px', gap: '6px' },
-    md: { dotSize: '12px', gap: '8px' },
-    lg: { dotSize: '16px', gap: '10px' }
-  };
-
-  const config = sizeConfig[size];
-
-  return (
-    <div className={`pulsing-dots-loader ${className}`}>
+export const PulsingDotsLoader: React.FC<PulsingDotsLoaderProps> = ({ size = 'md', className = '' }) => {
+    const sizeConfig = {
+        sm: { dotSize: '8px', gap: '6px' },
+        md: { dotSize: '12px', gap: '8px' },
+        lg: { dotSize: '16px', gap: '10px' }
+    };
+    const config = sizeConfig[size];
+    return (<div className={`pulsing-dots-loader ${className}`}>
       <div className="dot dot-1"></div>
       <div className="dot dot-2"></div>
       <div className="dot dot-3"></div>
@@ -62,12 +55,9 @@ export const PulsingDotsLoader: React.FC<PulsingDotsLoaderProps> = ({
           }
         }
       `}</style>
-    </div>
-  );
+    </div>);
 };
-
 // Export as default for backward compatibility
 export default PulsingDotsLoader;
-
 // Also export as LoadingSpinner for existing imports
 export const LoadingSpinner = PulsingDotsLoader;

@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>devsuite Design System Showcase</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Primary Orange */
+            --devsuite-primary: #FC8019;
+            --devsuite-primary-hover: #E6722E;
+            --devsuite-primary-active: #D84315;
+            --devsuite-primary-light: #FF7043;
+            --devsuite-primary-subtle: #FFF3E0;
+            
+            /* Secondary Green */
+            --devsuite-secondary: #60B246;
+            --devsuite-secondary-hover: #388E3C;
+            --devsuite-secondary-light: #81C784;
+            --devsuite-secondary-subtle: #E8F5E8;
+            
+            /* Text Hierarchy */
+            --text-primary: #1C1C1C;
+            --text-secondary: #3E3E3E;
+            --text-tertiary: #6B6B6B;
+            --text-quaternary: #8E8E8E;
+            --text-disabled: #CCCCCC;
+            --text-inverse: #FFFFFF;
+            
+            /* Backgrounds */
+            --bg-primary: #FFFFFF;
+            --bg-canvas: #F8F8F8;
+            --bg-surface: #EEEEEE;
+            --bg-elevated: #E8E8E8;
+            
+            /* Semantic */
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --error: #F44336;
+            --info: #2196F3;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-canvas);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-primary);
+            border-bottom: 1px solid #E0E0E0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--devsuite-primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .logo p {
+            font-size: 0.875rem;
+            color: var(--text-tertiary);
+        }
+
+        .search-container {
+            position: relative;
+            max-width: 300px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 40px;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--bg-primary);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-quaternary);
+        }
+
+        /* Navigation */
+        .nav {
+            background: var(--bg-primary);
+            border-bottom: 1px solid #E0E0E0;
+            padding: 1rem 0;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 2rem;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 8px 16px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .nav-tab.active {
+            background: var(--devsuite-primary);
+            color: white;
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: var(--devsuite-primary-subtle);
+            color: var(--devsuite-primary);
+        }
+
+        /* Main Content */
+        .main {
+            padding: 2rem 0;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .section-description {
+            font-size: 1.125rem;
+            color: var(--text-tertiary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Color Grid */
+        .color-category {
+            margin-bottom: 4rem;
+        }
+
+        .category-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            text-transform: capitalize;
+        }
+
+        .category-description {
+            font-size: 0.875rem;
+            color: var(--text-tertiary);
+            margin-bottom: 2rem;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .color-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .color-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        .color-swatch {
+            height: 80px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .copy-button {
+            opacity: 0;
+            transition: opacity 0.2s;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .color-card:hover .copy-button {
+            opacity: 1;
+        }
+
+        .color-info {
+            padding: 1rem;
+        }
+
+        .color-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .color-hex {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.75rem;
+            color: var(--text-quaternary);
+            background: var(--bg-canvas);
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+
+        .color-usage {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            line-height: 1.4;
+        }
+
+        /* Typography Section */
+        .typography-grid {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .typography-card {
+            background: var(--bg-primary);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .typography-sample {
+            margin-bottom: 1rem;
+        }
+
+        .typography-meta {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-quaternary);
+        }
+
+        .typography-level {
+            font-weight: 600;
+            background: var(--bg-canvas);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        /* Background Section */
+        .background-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .background-card {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .background-preview {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+        }
+
+        .background-info {
+            background: var(--bg-primary);
+            padding: 1rem 1.5rem;
+        }
+
+        .background-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .background-usage {
+            font-size: 0.875rem;
+            color: var(--text-tertiary);
+        }
+
+        /* Components Section */
+        .component-showcase {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .component-card {
+            background: var(--bg-primary);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .component-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .component-description {
+            font-size: 0.875rem;
+            color: var(--text-tertiary);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Buttons */
+        .button-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--devsuite-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--devsuite-primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--devsuite-secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: var(--devsuite-secondary-hover);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--devsuite-primary);
+            border: 1px solid var(--devsuite-primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--devsuite-primary);
+            color: white;
+        }
+
+        /* Form Elements */
+        .form-grid {
+            display: grid;
+            gap: 1rem;
+            max-width: 400px;
+        }
+
+        .form-input {
+            padding: 10px 12px;
+            border: 1px solid #E0E0E0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--devsuite-primary);
+            box-shadow: 0 0 0 3px rgba(252, 128, 25, 0.1);
+        }
+
+        /* Status Badges */
+        .badge-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            color: white;
+        }
+
+        .badge-success { background: var(--success); }
+        .badge-warning { background: var(--warning); }
+        .badge-error { background: var(--error); }
+        .badge-info { background: var(--info); }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--text-primary);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-tabs {
+                justify-content: center;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .color-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-grid {
+                flex-direction: column;
+            }
+        }
+
+        /* Hidden class */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast for copy feedback -->
+    <div id="toast" class="toast">Color copied to clipboard!</div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">🎨</div>
+                    <div>
+                        <h1>devsuite Design System</h1>
+                        <p>Complete color palette & component library</p>
+                    </div>
+                </div>
+                <div class="search-container">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" class="search-input" placeholder="Search colors..." id="searchInput">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="container">
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-section="colors">Color Palettes</button>
+                <button class="nav-tab" data-section="typography">Typography</button>
+                <button class="nav-tab" data-section="backgrounds">Backgrounds</button>
+                <button class="nav-tab" data-section="components">Components</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Colors Section -->
+            <section id="colors" class="section active">
+                <div class="section-header">
+                    <h2 class="section-title">Color System</h2>
+                    <p class="section-description">
+                        A comprehensive color palette designed for food delivery applications with 8 distinct color categories and 60+ carefully crafted shades.
+                    </p>
+                </div>
+
+                <!-- Primary Colors -->
+                <div class="color-category">
+                    <h3 class="category-title">Primary Colors</h3>
+                    <p class="category-description">Main brand colors for CTAs, branding, and primary buttons</p>
+                    <div class="color-grid" id="primaryColors"></div>
+                </div>
+
+                <!-- Secondary Colors -->
+                <div class="color-category">
+                    <h3 class="category-title">Secondary Colors</h3>
+                    <p class="category-description">Green colors for success states and positive actions</p>
+                    <div class="color-grid" id="secondaryColors"></div>
+                </div>
+
+                <!-- Tertiary Colors -->
+                <div class="color-category">
+                    <h3 class="category-title">Tertiary Colors</h3>
+                    <p class="category-description">Purple colors for premium features and subscription plans</p>
+                    <div class="color-grid" id="tertiaryColors"></div>
+                </div>
+
+                <!-- Semantic Colors -->
+                <div class="color-category">
+                    <h3 class="category-title">Semantic Colors</h3>
+                    <p class="category-description">Colors with specific meanings for alerts and states</p>
+                    <div class="color-grid" id="semanticColors"></div>
+                </div>
+
+                <!-- Text Colors -->
+                <div class="color-category">
+                    <h3 class="category-title">Text Colors</h3>
+                    <p class="category-description">8-level text hierarchy for perfect content organization</p>
+                    <div class="color-grid" id="textColors"></div>
+                </div>
+            </section>
+
+            <!-- Typography Section -->
+            <section id="typography" class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Typography System</h2>
+                    <p class="section-description">
+                        An 8-level text hierarchy system providing perfect content organization and visual hierarchy.
+                    </p>
+                </div>
+                <div class="typography-grid" id="typographyGrid"></div>
+            </section>
+
+            <!-- Backgrounds Section -->
+            <section id="backgrounds" class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Background System</h2>
+                    <p class="section-description">
+                        A 9-level background system for proper depth and layering throughout your application.
+                    </p>
+                </div>
+                <div class="background-grid" id="backgroundGrid"></div>
+            </section>
+
+            <!-- Components Section -->
+            <section id="components" class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Component Showcase</h2>
+                    <p class="section-description">
+                        Interactive components demonstrating the design system in action.
+                    </p>
+                </div>
+                <div class="component-showcase">
+                    <!-- Buttons -->
+                    <div class="component-card">
+                        <h3 class="component-title">Buttons</h3>
+                        <p class="component-description">Primary, secondary, and tertiary button styles</p>
+                        <div class="button-grid">
+                            <button class="btn btn-primary">Primary Button</button>
+                            <button class="btn btn-secondary">Secondary Button</button>
+                            <button class="btn btn-outline">Outline Button</button>
+                        </div>
+                    </div>
+
+                    <!-- Form Elements -->
+                    <div class="component-card">
+                        <h3 class="component-title">Form Elements</h3>
+                        <p class="component-description">Input fields and form components</p>
+                        <div class="form-grid">
+                            <input type="text" class="form-input" placeholder="Primary input field">
+                            <input type="email" class="form-input" placeholder="Email address">
+                            <input type="password" class="form-input" placeholder="Password">
+                        </div>
+                    </div>
+
+                    <!-- Status Badges -->
+                    <div class="component-card">
+                        <h3 class="component-title">Status Badges</h3>
+                        <p class="component-description">Semantic status indicators</p>
+                        <div class="badge-grid">
+                            <span class="badge badge-success">Success</span>
+                            <span class="badge badge-warning">Warning</span>
+                            <span class="badge badge-error">Error</span>
+                            <span class="badge badge-info">Info</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        // Color data
+        const colorPalettes = {
+            primary: [
+                { name: 'Primary Darker', hex: '#BF360C', usage: 'Strong emphasis, icons on light backgrounds' },
+                { name: 'Primary Dark', hex: '#D84315', usage: 'Borders, emphasis elements' },
+                { name: 'Primary', hex: '#FC8019', usage: 'Main brand color, primary buttons, CTAs' },
+                { name: 'Primary Hover', hex: '#E6722E', usage: 'Button hover states' },
+                { name: 'Primary Active', hex: '#D84315', usage: 'Pressed/active button states' },
+                { name: 'Primary Light', hex: '#FF7043', usage: 'Secondary buttons, lighter accents' },
+                { name: 'Primary Lighter', hex: '#FF8A65', usage: 'Subtle highlights, badges' },
+                { name: 'Primary Subtle', hex: '#FFF3E0', usage: 'Background tints, card backgrounds' },
+                { name: 'Primary Subtle Hover', hex: '#FFE8CC', usage: 'Hover states for subtle elements' }
+            ],
+            secondary: [
+                { name: 'Secondary Darker', hex: '#1B5E20', usage: 'Strong success emphasis' },
+                { name: 'Secondary Dark', hex: '#388E3C', usage: 'Success text, emphasis' },
+                { name: 'Secondary', hex: '#60B246', usage: 'Success states' },
+                { name: 'Secondary Hover', hex: '#388E3C', usage: 'Success button hover states' },
+                { name: 'Secondary Active', hex: '#2E7D32', usage: 'Pressed success button states' },
+                { name: 'Secondary Light', hex: '#81C784', usage: 'Light success accents' },
+                { name: 'Secondary Lighter', hex: '#C8E6C9', usage: 'Background tints for success' },
+                { name: 'Secondary Subtle', hex: '#E8F5E8', usage: 'Success background areas' }
+            ],
+            tertiary: [
+                { name: 'Tertiary Darker', hex: '#4A148C', usage: 'Strong premium emphasis' },
+                { name: 'Tertiary Dark', hex: '#6A1B9A', usage: 'Premium text, emphasis' },
+                { name: 'Tertiary', hex: '#8E24AA', usage: 'Premium features, subscription plans' },
+                { name: 'Tertiary Hover', hex: '#7B1FA2', usage: 'Premium button hover states' },
+                { name: 'Tertiary Active', hex: '#6A1B9A', usage: 'Pressed premium button states' },
+                { name: 'Tertiary Light', hex: '#AB47BC', usage: 'Light premium accents' },
+                { name: 'Tertiary Lighter', hex: '#CE93D8', usage: 'Background tints for premium' },
+                { name: 'Tertiary Subtle', hex: '#F3E5F5', usage: 'Premium background areas' }
+            ],
+            semantic: [
+                { name: 'Success', hex: '#4CAF50', usage: 'Confirmations, completed orders' },
+                { name: 'Success Light', hex: '#E8F5E8', usage: 'Success background areas' },
+                { name: 'Success Dark', hex: '#2E7D32', usage: 'Success text' },
+                { name: 'Warning', hex: '#FF9800', usage: 'Alerts, pending states' },
+                { name: 'Warning Light', hex: '#FFF3E0', usage: 'Warning background areas' },
+                { name: 'Warning Dark', hex: '#F57C00', usage: 'Warning text' },
+                { name: 'Error', hex: '#F44336', usage: 'Errors, cancellations' },
+                { name: 'Error Light', hex: '#FFEBEE', usage: 'Error background areas' },
+                { name: 'Error Dark', hex: '#C62828', usage: 'Error text' },
+                { name: 'Info', hex: '#2196F3', usage: 'Information, neutral alerts' },
+                { name: 'Info Light', hex: '#E3F2FD', usage: 'Info background areas' },
+                { name: 'Info Dark', hex: '#1565C0', usage: 'Info text' }
+            ],
+            text: [
+                { name: 'Primary Text', hex: '#1C1C1C', usage: 'Main headings, important content' },
+                { name: 'Secondary Text', hex: '#3E3E3E', usage: 'Subheadings, descriptions' },
+                { name: 'Tertiary Text', hex: '#6B6B6B', usage: 'Body text, captions' },
+                { name: 'Quaternary Text', hex: '#8E8E8E', usage: 'Metadata, timestamps' },
+                { name: 'Quinary Text', hex: '#B0B0B0', usage: 'Very subtle text elements' },
+                { name: 'Disabled Text', hex: '#CCCCCC', usage: 'Inactive elements' },
+                { name: 'Placeholder Text', hex: '#D3D3D3', usage: 'Form placeholders' },
+                { name: 'Inverse Text', hex: '#FFFFFF', usage: 'Text on dark backgrounds' }
+            ]
+        };
+
+        const textLevels = [
+            { level: 'H1', color: '#1C1C1C', class: 'font-size: 2.5rem; font-weight: 700;', sample: 'Main Heading - Primary Text' },
+            { level: 'H2', color: '#3E3E3E', class: 'font-size: 2rem; font-weight: 600;', sample: 'Secondary Heading - Secondary Text' },
+            { level: 'H3', color: '#6B6B6B', class: 'font-size: 1.5rem; font-weight: 500;', sample: 'Subheading - Tertiary Text' },
+            { level: 'Body', color: '#8E8E8E', class: 'font-size: 1rem; font-weight: 400;', sample: 'Body text and metadata - Quaternary Text' },
+            { level: 'Caption', color: '#B0B0B0', class: 'font-size: 0.875rem; font-weight: 400;', sample: 'Captions and subtle elements - Quinary Text' },
+            { level: 'Disabled', color: '#CCCCCC', class: 'font-size: 0.875rem; font-weight: 400;', sample: 'Disabled text elements' },
+            { level: 'Placeholder', color: '#D3D3D3', class: 'font-size: 0.875rem; font-style: italic;', sample: 'Form placeholders and hints' },
+            { level: 'Inverse', color: '#FFFFFF', class: 'font-size: 1rem; font-weight: 500;', sample: 'Text on dark backgrounds' }
+        ];
+
+        const backgrounds = [
+            { name: 'Primary Background', hex: '#FFFFFF', usage: 'Main app background' },
+            { name: 'Secondary Background', hex: '#FEFEFE', usage: 'Subtle background variation' },
+            { name: 'Tertiary Background', hex: '#FDFDFD', usage: 'Another subtle variation' },
+            { name: 'Canvas Background', hex: '#F8F8F8', usage: 'Section backgrounds' },
+            { name: 'Muted Background', hex: '#F5F5F5', usage: 'Cards, panels' },
+            { name: 'Subtle Background', hex: '#F2F2F2', usage: 'Subtle sections' },
+            { name: 'Surface Background', hex: '#EEEEEE', usage: 'Elevated surfaces' },
+            { name: 'Elevated Background', hex: '#E8E8E8', usage: 'Modals, dropdowns' }
+        ];
+
+        // Utility functions
+        function isLightColor(hex) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            return brightness > 128;
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast();
+            });
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        function createColorCard(color) {
+            const isLight = isLightColor(color.hex);
+            return `
+                <div class="color-card" onclick="copyToClipboard('${color.hex}')">
+                    <div class="color-swatch" style="background-color: ${color.hex}">
+                        <button class="copy-button" style="color: ${isLight ? '#333' : '#fff'}">Copy</button>
+                    </div>
+                    <div class="color-info">
+                        <div class="color-name">${color.name}</div>
+                        <div class="color-hex">${color.hex}</div>
+                        <div class="color-usage">${color.usage}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createTypographyCard(level, index) {
+            const bgColor = level.level === 'Inverse' ? '#333' : 'transparent';
+            return `
+                <div class="typography-card" style="background-color: ${bgColor}">
+                    <div class="typography-sample" style="color: ${level.color}; ${level.class}">
+                        ${level.sample}
+                    </div>
+                    <div class="typography-meta">
+                        <span class="typography-level">${level.level}</span>
+                        <span>Level ${index + 1} - ${level.color}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createBackgroundCard(bg, index) {
+            return `
+                <div class="background-card">
+                    <div class="background-preview" style="background-color: ${bg.hex}">
+                        <span class="typography-level">Level ${index + 1}</span>
+                        <span style="margin-left: 1rem; font-weight: 600; color: #1C1C1C">${bg.name}</span>
+                    </div>
+                    <div class="background-info">
+                        <div class="background-name">${bg.name}</div>
+                        <div class="background-usage">${bg.usage}</div>
+                        <div class="color-hex" style="margin-top: 0.5rem">${bg.hex}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Initialize the page
+        function init() {
+            // Render color palettes
+            Object.entries(colorPalettes).forEach(([category, colors]) => {
+                const container = document.getElementById(category + 'Colors');
+                if (container) {
+                    container.innerHTML = colors.map(createColorCard).join('');
+                }
+            });
+
+            // Render typography
+            const typographyGrid = document.getElementById('typographyGrid');
+            typographyGrid.innerHTML = textLevels.map(createTypographyCard).join('');
+
+            // Render backgrounds
+            const backgroundGrid = document.getElementById('backgroundGrid');
+            backgroundGrid.innerHTML = backgrounds.map(createBackgroundCard).join('');
+
+            // Setup navigation
+            const navTabs = document.querySelectorAll('.nav-tab');
+            const sections = document.querySelectorAll('.section');
+
+            navTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetSection = tab.dataset.section;
+                    
+                    // Update active tab
+                    navTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // Update active section
+                    sections.forEach(s => s.classList.remove('active'));
+                    document.getElementById(targetSection).classList.add('active');
+                });
+            });
+
+            // Setup search
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const colorCards = document.querySelectorAll('.color-card');
+                
+                colorCards.forEach(card => {
+                    const text = card.textContent.toLowerCase();
+                    const shouldShow = text.includes(searchTerm);
+                    card.style.display = shouldShow ? 'block' : 'none';
+                });
+            });
+        }
+
+        // Start the application
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

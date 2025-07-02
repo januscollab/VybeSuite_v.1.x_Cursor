@@ -1,0 +1,85 @@
+/// <reference types="vite/client" />
+
+
+export enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARN = 2,
+  ERROR = 3
+}
+
+interface LogContext {
+  timestamp?: string;
+  [key: string]: any;
+}
+
+let currentLogLevel = LogLevel.INFO;
+
+try {
+  const envLevel = import.meta.env.VITE_LOG_LEVEL;
+  if (typeof envLevel === 'string') {
+    currentLogLevel = LogLevel[envLevel as keyof typeof LogLevel] ?? LogLevel.INFO;
+  }
+} catch {
+  currentLogLevel = LogLevel.INFO;
+}
+
+function formatLogMessage(level: string, component: string, message: string, context: LogContext = {}) {
+  return {
+    level,
+    component,
+    message,
+    timestamp: new Date().toISOString(),
+    ...context
+  };
+}
+
+export const debug = {
+  setLogLevel(level: LogLevel) {
+    currentLogLevel = level;
+  },
+
+  getLogLevel(): LogLevel {
+    return currentLogLevel;
+  },
+
+  debug(component: string, message: string, context: LogContext = {}) {
+    if (currentLogLevel <= LogLevel.DEBUG) {
+      console.debug(formatLogMessage('DEBUG', component, message, context));
+    }
+  },
+
+  info(component: string, message: string, context: LogContext = {}) {
+    if (currentLogLevel <= LogLevel.INFO) {
+      console.info(formatLogMessage('INFO', component, message, context));
+    }
+  },
+
+  warn(component: string, message: string, context: LogContext = {}) {
+    if (currentLogLevel <= LogLevel.WARN) {
+      console.warn(formatLogMessage('WARN', component, message, context));
+    }
+  },
+
+  error(component: string, message: string, context: LogContext = {}) {
+    if (currentLogLevel <= LogLevel.ERROR) {
+      console.error(formatLogMessage('ERROR', component, message, context));
+    }
+  },
+
+  group(label: string) {
+    if (currentLogLevel <= LogLevel.DEBUG) {
+      console.group(label);
+    }
+  },
+
+  groupEnd() {
+    if (currentLogLevel <= LogLevel.DEBUG) {
+      console.groupEnd();
+    }
+  },
+
+  log(component: string, message: string, context: LogContext = {}) {
+    this.info(component, message, context);
+  }
+};

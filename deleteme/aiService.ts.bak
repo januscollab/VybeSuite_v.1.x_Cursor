@@ -1,0 +1,234 @@
+import { AIGenerationRequest, AIGenerationResponse } from '../types';
+import { debug } from './debug';
+export class AIServiceError extends Error {
+    constructor(message: string, public provider: string, public statusCode?: number, public isCorsError?: boolean) {
+        super(message);
+        this.name = 'AIServiceError';
+    }
+}
+export async function generateStoryWithOpenAI(prompt: string, apiKey: string, model: string, systemPrompt?: string): Promise<AIGenerationResponse> {
+    if (!apiKey.trim()) {
+        throw new AIServiceError('OpenAI API key is required', 'openai');
+    }
+    const defaultSystemPrompt = `You are an expert Agile/Scrum story writer. Generate a user story based on the given prompt.
+
+Return a JSON response with exactly this structure:
+{
+  "title": "As a [user type], I want [goal] so that [benefit]",
+  "description": "Detailed description with acceptance criteria and technical requirements",
+  "tags": ["tag1", "tag2", "tag3"]
+}
+
+Make the title follow proper user story format. Include detailed acceptance criteria and technical requirements in the description. Suggest 3-5 relevant tags.`;
+    const finalSystemPrompt = systemPrompt || defaultSystemPrompt;
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model,
+                messages: [
+                    { role: 'system', content: finalSystemPrompt },
+                    { role: 'user', content: prompt }
+                ],
+                max_tokens: 1000,
+                temperature: 0.7
+            })
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new AIServiceError(errorData.error?.message || `OpenAI API error: ${response.status}`, 'openai', response.status);
+        }
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+        debug.info('OpenAI', `Response: ${model}, content: ${content?.length || 0} chars`, {
+            model,
+            promptPreview: prompt.substring(0, 100) + '...',
+            contentLength: content?.length || 0,
+            content
+        });
+        if (!content) {
+            throw new AIServiceError('No content received from OpenAI', 'openai');
+        }
+        // Try to parse JSON response
+        try {
+            // Clean up the content - remove markdown code blocks if present
+            const cleanContent = content.replace(/```json\s*|\s*```/g, '').trim();
+            debug.info('OpenAI', `Content cleaned for parsing`, { content: cleanContent });
+            const parsed = JSON.parse(cleanContent);
+            // VALIDATION: Check if description is comprehensive enough
+            const description = parsed.description || '';
+            const hasAcceptanceCriteria = description.toLowerCase().includes('acceptance criteria') ||
+                description.toLowerCase().includes('requirements') ||
+                description.length > 100;
+            if (!hasAcceptanceCriteria) {
+                debug.warn('OpenAI', `Description may be incomplete`, {
+                    length: description.length,
+                    hasAcceptanceCriteria: false,
+                    descriptionPreview: description.substring(0, 200) + '...'
+                });
+            }
+            return {
+                title: parsed.title || `As a user, I want to ${prompt} so that I can achieve my goals`,
+                description: parsed.description || `Implement: ${prompt}`,
+                tags: Array.isArray(parsed.tags) ? parsed.tags : ['feature'],
+                _metadata: {
+                    isComplete: hasAcceptanceCriteria,
+                    contentLength: description.length,
+                    provider: 'openai'
+                }
+            };
+        }
+        catch (parseError) {
+            debug.warn('OpenAI', `JSON parse failed`, { error: parseError });
+            // Fallback if JSON parsing fails
+            return {
+                title: `As a user, I want to ${prompt} so that I can achieve my goals`,
+                description: content,
+                tags: ['feature', 'ai-generated']
+            };
+        }
+    }
+    catch (error) {
+        if (error instanceof AIServiceError) {
+            throw error;
+        }
+        // Check if this is a CORS/network error
+        if (error instanceof TypeError && error.message === 'Failed to fetch') {
+            throw new AIServiceError('Unable to connect to OpenAI API. This may be due to CORS restrictions when running locally. In production, consider using a backend proxy to handle API calls.', 'openai', undefined, true);
+        }
+        throw new AIServiceError(error instanceof Error ? error.message : 'Unknown error occurred', 'openai');
+    }
+}
+export async function generateStoryWithAnthropic(prompt: string, apiKey: string, model: string, systemPrompt?: string): Promise<AIGenerationResponse> {
+    if (!apiKey.trim()) {
+        throw new AIServiceError('Anthropic API key is required', 'anthropic');
+    }
+    const defaultSystemPrompt = `You are an expert Agile/Scrum story writer. Generate a user story based on the given prompt.
+
+Return a JSON response with exactly this structure:
+{
+  "title": "As a [user type], I want [goal] so that [benefit]",
+  "description": "Detailed description with acceptance criteria and technical requirements",
+  "tags": ["tag1", "tag2", "tag3"]
+}
+
+Make the title follow proper user story format. Include detailed acceptance criteria and technical requirements in the description. Suggest 3-5 relevant tags.`;
+    const finalSystemPrompt = systemPrompt || defaultSystemPrompt;
+    try {
+        // Use proxy in development, direct API in production
+        const apiUrl = import.meta.env.DEV
+            ? '/api/anthropic/v1/messages'
+            : 'https://api.anthropic.com/v1/messages';
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'x-api-key': apiKey,
+                'Content-Type': 'application/json',
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+                model,
+                max_tokens: 1000,
+                system: finalSystemPrompt,
+                messages: [
+                    { role: 'user', content: prompt }
+                ]
+            })
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new AIServiceError(errorData.error?.message || `Anthropic API error: ${response.status}`, 'anthropic', response.status);
+        }
+        const data = await response.json();
+        const content = data.content?.[0]?.text;
+        debug.info('Anthropic', `Raw response received`, {
+            model,
+            promptPreview: prompt.substring(0, 100) + '...',
+            contentLength: content?.length || 0,
+            content
+        });
+        if (!content) {
+            throw new AIServiceError('No content received from Anthropic', 'anthropic');
+        }
+        // Try to parse JSON response
+        try {
+            // Clean up the content - remove markdown code blocks if present
+            const cleanContent = content.replace(/```json\s*|\s*```/g, '').trim();
+            debug.info('Anthropic', `Content cleaned for parsing`, { content: cleanContent });
+            const parsed = JSON.parse(cleanContent);
+            // VALIDATION: Check if description is comprehensive enough
+            const description = parsed.description || '';
+            const hasAcceptanceCriteria = description.toLowerCase().includes('acceptance criteria') ||
+                description.toLowerCase().includes('requirements') ||
+                description.length > 100;
+            if (!hasAcceptanceCriteria) {
+                debug.warn('Anthropic', `Description may be incomplete`, {
+                    length: description.length,
+                    hasAcceptanceCriteria: false,
+                    descriptionPreview: description.substring(0, 200) + '...'
+                });
+            }
+            return {
+                title: parsed.title || `As a user, I want to ${prompt} so that I can achieve my goals`,
+                description: parsed.description || `Implement: ${prompt}`,
+                tags: Array.isArray(parsed.tags) ? parsed.tags : ['feature'],
+                _metadata: {
+                    isComplete: hasAcceptanceCriteria,
+                    contentLength: description.length,
+                    provider: 'anthropic'
+                }
+            };
+        }
+        catch (parseError) {
+            debug.warn('OpenAI', `JSON parse failed`, { error: parseError });
+            // Fallback if JSON parsing fails
+            return {
+                title: `As a user, I want to ${prompt} so that I can achieve my goals`,
+                description: content,
+                tags: ['feature', 'ai-generated']
+            };
+        }
+    }
+    catch (error) {
+        if (error instanceof AIServiceError) {
+            throw error;
+        }
+        // Check if this is a CORS/network error
+        if (error instanceof TypeError && error.message === 'Failed to fetch') {
+            throw new AIServiceError('Unable to connect to Anthropic API. This may be due to CORS restrictions when running locally. In production, consider using a backend proxy to handle API calls.', 'anthropic', undefined, true);
+        }
+        throw new AIServiceError(error instanceof Error ? error.message : 'Unknown error occurred', 'anthropic');
+    }
+}
+export async function generateStory(request: AIGenerationRequest): Promise<AIGenerationResponse> {
+    const { provider, model, prompt, apiKey, systemPrompt } = request;
+    return provider === 'anthropic'
+        ? generateStoryWithAnthropic(prompt, apiKey, model, systemPrompt)
+        : generateStoryWithOpenAI(prompt, apiKey, model, systemPrompt);
+}
+export async function testConnection(provider: 'openai' | 'anthropic', apiKey: string, model: string): Promise<boolean> {
+    try {
+        await generateStory({
+            provider,
+            model,
+            prompt: 'test connection',
+            apiKey,
+            systemPrompt: 'You are a test assistant. Respond with a simple JSON: {"title":"test","description":"test","tags":["test"]}'
+        });
+        return true;
+    }
+    catch (error) {
+        if (error instanceof AIServiceError && error.isCorsError) {
+            debug.warn(provider, `CORS error in connection test`, { error });
+        }
+        else {
+            debug.error(`${provider} connection test failed`, { error });
+        }
+        return false;
+    }
+}
