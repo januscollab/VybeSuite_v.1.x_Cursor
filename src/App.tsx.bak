@@ -219,7 +219,7 @@ function AppContent() {
 
   const handleAddSprint = useCallback(async (title: string, icon: string, description: string, isBacklog: boolean, isDraggable: boolean) => {
     try {
-      await addSprint(title, icon, description, isBacklog, isDraggable);
+      await addSprint({ title, icon, description });
       setAddSprintModalOpen(false);
     } catch (err) {
       console.error('Error adding sprint:', err);

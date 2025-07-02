@@ -68,4 +68,4 @@ Thumbs.db
 .yarn-integrity
 
 # Supabase migrations
-/supabase/migrations/
+/supabase/migrations/transform-logs.ts
